@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แดชบอร์ด | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo-mark">🛡️</span>
+      VoiceGuard AI
+    </div>
+    <nav>
+      <a href="dashboard.html" class="active"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a href="dashboard.html#logs"><span class="nav-icon">📋</span><span class="nav-label">Call Logs</span></a>
+      <a href="report-summary.html"><span class="nav-icon">📄</span><span class="nav-label">Report</span></a>
+      <a href="settings.html"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
+      <a href="call-demo.html"><span class="nav-icon">📞</span><span class="nav-label">Call Demo</span></a>
+    </nav>
+    <div class="role-chip" id="role-chip">กำลังโหลดผู้ใช้...</div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>ภาพรวมระบบ</h1>
+        <p class="subtitle">สรุปสถานการณ์การตรวจจับเสียงสังเคราะห์และสายเสี่ยงวันนี้</p>
+      </div>
+      <a href="login.html" class="btn btn-ghost btn-sm" id="logout-btn">ออกจากระบบ</a>
+    </div>
+
+    <!-- ปุ่มเด่นสำหรับ pitching -->
+    <div class="cta-banner">
+      <div>
+        <h3>ทดลองจำลองสายเรียกเข้า (Live Demo)</h3>
+        <p>ดูการทำงานของ AI แบบเรียลไทม์ ตั้งแต่รับสายจนแจ้งเตือนความเสี่ยง</p>
+      </div>
+      <a href="call-demo.html" class="btn btn-primary btn-lg">▶ เริ่ม Live Demo</a>
+    </div>
+
+    <!-- สรุปสถิติ -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="icon-circle navy">📞</div>
+        <div class="stat-value">—</div>
+        <div class="stat-name">สายที่ตรวจสอบวันนี้</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-circle coral">⚠️</div>
+        <div class="stat-value">—</div>
+        <div class="stat-name">สายเสี่ยงสูงที่ตรวจพบ</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-circle ice">🎯</div>
+        <div class="stat-value">—</div>
+        <div class="stat-name">ความแม่นยำของโมเดล</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-circle navy">💰</div>
+        <div class="stat-value">—</div>
+        <div class="stat-name">มูลค่าความเสียหายที่ป้องกันได้ (บาท)</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-title">แนวโน้มสายเสี่ยงรายวัน (7 วันล่าสุด)</div>
+        <div id="trend-chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">สัดส่วนสถานะสาย</div>
+        <div id="status-summary"></div>
+      </div>
+    </div>
+
+    <div class="card" id="logs">
+      <div class="card-title">Call Logs ล่าสุด</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>เบอร์โทร</th>
+              <th>เวลา</th>
+              <th>Risk Score</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr><td colspan="5">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  // แสดง role ผู้ใช้ (ถ้าไม่ได้ login ก็ยังดูได้ แต่แสดงเป็น guest)
+  const currentUser = getCurrentUser();
+  document.getElementById("role-chip").textContent = currentUser
+    ? `👤 ${currentUser.username} · ${currentUser.role_label}`
+    : "👤 โหมดผู้เยี่ยมชม (Guest)";
+
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    localStorage.removeItem("vg_user");
+  });
+
+  function formatNumber(n) {
+    return new Intl.NumberFormat("th-TH").format(n);
+  }
+
+  /* animate ตัวเลขนับขึ้นจาก 0 ให้ดูมีชีวิต */
+  function countUp(el, target, formatter, duration = 900) {
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = formatter(target * eased);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    // กัน rAF โดนหยุดตอนแท็บอยู่ background: ยืนยันค่าสุดท้ายเสมอ
+    setTimeout(() => { el.textContent = formatter(target); }, duration + 150);
+  }
+
+  async function loadStats() {
+    const stats = await apiGet("/calls/stats");
+    const cards = document.querySelectorAll("#stats-grid .stat-value");
+    countUp(cards[0], stats.checked_today, (v) => formatNumber(Math.round(v)));
+    countUp(cards[1], stats.high_risk_today, (v) => formatNumber(Math.round(v)));
+    countUp(cards[2], stats.model_accuracy, (v) => v.toFixed(1) + "%");
+    countUp(cards[3], stats.blocked_damage_baht, (v) => formatNumber(Math.round(v)));
+  }
+
+  async function loadTrend() {
+    const trend = await apiGet("/calls/trend");
+    const max = Math.max(...trend.map((d) => d.risky_calls));
+    const niceMax = Math.ceil(max / 50) * 50; // ปัดเพดานแกน y ให้เป็นเลขกลม
+    const width = 480, height = 210, padL = 40, padR = 16, padT = 14, padB = 30;
+    const plotW = width - padL - padR, plotH = height - padT - padB;
+    const stepX = plotW / (trend.length - 1);
+
+    const points = trend.map((d, i) => {
+      const x = padL + i * stepX;
+      const y = padT + plotH - (d.risky_calls / niceMax) * plotH;
+      return { x, y, ...d };
+    });
+
+    // เส้น grid แนวนอน + ตัวเลขแกน y
+    const gridLines = [0, 0.5, 1].map((t) => {
+      const y = padT + plotH - t * plotH;
+      const val = Math.round(niceMax * t);
+      return `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#EEF3FC" stroke-width="1.5" />
+              <text x="${padL - 8}" y="${y + 4}" font-size="11" fill="#8b93a7" text-anchor="end">${val}</text>`;
+    }).join("");
+
+    const path = points.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
+    const areaPath = path + ` L${points[points.length - 1].x},${padT + plotH} L${points[0].x},${padT + plotH} Z`;
+
+    const circles = points.map((p) =>
+      `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#E4572E" stroke="#fff" stroke-width="2" />`
+    ).join("");
+
+    const labels = points.map((p) =>
+      `<text x="${p.x}" y="${height - 8}" font-size="12" fill="#5b6272" text-anchor="middle">${p.day}</text>`
+    ).join("");
+
+    document.getElementById("trend-chart").innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:100%;">
+        <defs>
+          <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#CADCFC" stop-opacity="0.85" />
+            <stop offset="100%" stop-color="#CADCFC" stop-opacity="0.05" />
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <path d="${areaPath}" fill="url(#area-grad)" />
+        <path d="${path}" fill="none" stroke="#1E2761" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        ${circles}
+        ${labels}
+      </svg>
+    `;
+  }
+
+  /* modal แสดงรายละเอียดสาย (แทน alert ให้ดูเป็นมืออาชีพ) */
+  function showCallDetail(log) {
+    const statusColor = log.risk_score >= 80 ? "#E4572E" : log.risk_score >= 50 ? "#E0A429" : "#2E9E5B";
+    let modal = document.getElementById("call-detail-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "call-detail-modal";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(13,18,51,0.55);display:flex;align-items:center;justify-content:center;z-index:90;padding:20px;backdrop-filter:blur(3px);";
+      modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div class="card" style="max-width:400px;width:100%;text-align:center;">
+        <div class="icon-circle ${log.risk_score >= 80 ? "coral" : "ice"}" style="margin:0 auto 16px;">📞</div>
+        <h3 style="font-size:20px;font-weight:800;">${log.phone}</h3>
+        <p style="color:var(--gray-text);font-size:14px;margin-top:4px;">${log.time}</p>
+        <div style="font-size:38px;font-weight:800;color:${statusColor};margin:14px 0 2px;">${log.risk_score}%</div>
+        <div style="color:var(--gray-soft);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Risk Score</div>
+        <div style="margin-top:14px;"><span class="badge ${log.risk_score >= 80 ? "badge-danger" : log.risk_score >= 50 ? "badge-suspect" : "badge-safe"}">${log.status}</span></div>
+        <button class="btn btn-navy btn-block" style="margin-top:22px;" onclick="document.getElementById('call-detail-modal').remove()">ปิด</button>
+      </div>`;
+  }
+
+  async function loadLogs() {
+    const logs = await apiGet("/calls/logs");
+    const statusBadge = { "ปลอดภัย": "badge-safe", "น่าสงสัย": "badge-suspect", "เสี่ยงสูง": "badge-danger" };
+
+    document.getElementById("logs-tbody").innerHTML = logs.map((log, i) => `
+      <tr>
+        <td>${log.phone}</td>
+        <td>${log.time}</td>
+        <td>${log.risk_score}%</td>
+        <td><span class="badge ${statusBadge[log.status]}">${log.status}</span></td>
+        <td><button class="btn btn-ghost btn-sm" data-log-index="${i}">ดูรายละเอียด</button></td>
+      </tr>
+    `).join("");
+
+    document.querySelectorAll("#logs-tbody [data-log-index]").forEach((btn) => {
+      btn.addEventListener("click", () => showCallDetail(logs[parseInt(btn.dataset.logIndex, 10)]));
+    });
+
+    // สรุปสัดส่วนสถานะแบบง่ายๆ
+    const counts = { "ปลอดภัย": 0, "น่าสงสัย": 0, "เสี่ยงสูง": 0 };
+    logs.forEach((l) => counts[l.status]++);
+    const total = logs.length;
+    document.getElementById("status-summary").innerHTML = Object.entries(counts).map(([status, count]) => `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;">
+          <span>${status}</span><span>${count} สาย</span>
+        </div>
+        <div style="height:10px;background:var(--ice-soft);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;width:${(count / total) * 100}%;background:${status === "เสี่ยงสูง" ? "#E4572E" : status === "น่าสงสัย" ? "#E0A429" : "#2E9E5B"};border-radius:999px;"></div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  loadStats();
+  loadTrend();
+  loadLogs();
+</script>
+</body>
+</html>

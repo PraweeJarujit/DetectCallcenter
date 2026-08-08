@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand">
+      <span class="logo-mark" style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;">🛡️</span>
+      <strong>VoiceGuard AI</strong>
+    </div>
+    <h1>เข้าสู่ระบบสำหรับหน่วยงาน</h1>
+    <p class="subtitle">เลือกประเภทหน่วยงานของคุณ แล้วเข้าสู่ระบบเพื่อดูแดชบอร์ดที่ปรับให้เหมาะกับหน่วยงาน</p>
+
+    <!-- เลือกบทบาทผู้ใช้ เก็บลง localStorage เพื่อ personalize dashboard -->
+    <div class="role-tabs" id="role-tabs">
+      <div class="role-tab active" data-role="gov">หน่วยงานรัฐ</div>
+      <div class="role-tab" data-role="bank">ธนาคาร</div>
+      <div class="role-tab" data-role="telco">Telco</div>
+    </div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">ชื่อผู้ใช้งาน</label>
+        <input type="text" id="username" placeholder="เช่น officer.somchai" value="officer.demo">
+      </div>
+      <div class="form-group">
+        <label for="password">รหัสผ่าน</label>
+        <input type="password" id="password" placeholder="••••••••" value="demo1234">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">เข้าสู่ระบบ</button>
+    </form>
+
+    <p class="form-hint">
+      นี่คือระบบ demo สำหรับ pitching — กรอกข้อมูลอะไรก็ได้แล้วกดเข้าสู่ระบบ<br>
+      หรือ <a href="call-demo.html" style="color:var(--navy);font-weight:600;">ทดลองใช้งาน Demo ทันที</a> โดยไม่ต้อง login
+    </p>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  let selectedRole = "gov";
+
+  document.querySelectorAll(".role-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".role-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      selectedRole = tab.dataset.role;
+    });
+  });
+
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value || "guest";
+    const password = document.getElementById("password").value || "";
+
+    try {
+      const result = await apiPost("/auth/login", { username, password, role: selectedRole });
+      localStorage.setItem("vg_user", JSON.stringify(result.user));
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      // แม้ backend ไม่ตอบ ก็ยัง mock login ผ่านฝั่ง client ได้ ไม่ให้ demo สะดุด
+      const roleLabels = { gov: "หน่วยงานรัฐ", bank: "ธนาคาร", telco: "Telco" };
+      localStorage.setItem("vg_user", JSON.stringify({
+        username, role: selectedRole, role_label: roleLabels[selectedRole],
+      }));
+      window.location.href = "dashboard.html";
+    }
+  });
+</script>
+</body>
+</html>

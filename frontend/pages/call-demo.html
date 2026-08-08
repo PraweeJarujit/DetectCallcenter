@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จำลองการรับสาย | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body style="background:var(--ice-soft);">
+
+<div class="container" style="padding-top:20px;">
+  <div class="navbar">
+    <a href="dashboard.html" class="brand">
+      <span class="logo-mark">🛡️</span> VoiceGuard AI
+    </a>
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">← กลับ Dashboard</a>
+  </div>
+</div>
+
+<button class="btn btn-secondary btn-sm reset-demo-btn" id="reset-btn">🔄 Reset Demo</button>
+
+<h1 style="text-align:center;font-size:24px;margin-top:8px;">จำลองการรับสายจากมิจฉาชีพ (Live Demo)</h1>
+<p class="demo-instructions">กดปุ่ม "รับสาย" บนหน้าจอมือถือจำลองด้านล่าง เพื่อดู AI วิเคราะห์เสียงแบบเรียลไทม์ระหว่างการสนทนา</p>
+
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen" id="phone-screen">
+
+      <!-- status bar จำลอง (นาฬิกาเดินจริงด้วย JS) -->
+      <div class="phone-statusbar">
+        <span id="sb-clock">--:--</span>
+        <span class="sb-right">📶 <span>5G</span> 🔋</span>
+      </div>
+
+      <!-- ขั้นที่ 1: หน้าจอสายเรียกเข้าปกติ -->
+      <div class="call-screen" id="incoming-screen">
+        <div class="call-status-text">สายเรียกเข้า...</div>
+        <div class="call-avatar">📱</div>
+        <div class="call-number">064-XXX-XX21</div>
+        <div class="call-status-text">หมายเลขไม่รู้จัก</div>
+        <div class="call-actions">
+          <div>
+            <button class="call-action-btn decline" id="decline-btn">✕</button>
+            <div class="call-action-label">ปฏิเสธ</div>
+          </div>
+          <div>
+            <button class="call-action-btn accept" id="accept-btn">📞</button>
+            <div class="call-action-label">รับสาย</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ขั้นที่ 2: ระหว่างสนทนา + overlay วิเคราะห์เสียงเรียลไทม์ -->
+      <div class="call-screen" id="incall-screen" style="display:none;">
+        <div class="analysis-overlay" id="analysis-overlay">
+          <div class="analysis-title">
+            <span class="spinner-dot"></span>
+            <span id="analysis-status-text">กำลังวิเคราะห์เสียง...</span>
+          </div>
+          <div class="waveform" id="waveform"></div>
+          <div class="risk-row">
+            <span>Risk Score</span>
+            <span class="risk-score-num" id="risk-score-num">0%</span>
+          </div>
+          <div class="risk-bar-track"><div class="risk-bar-fill" id="risk-bar-fill"></div></div>
+        </div>
+
+        <div style="margin-top:auto;margin-bottom:auto;text-align:center;">
+          <div class="call-avatar" style="margin:0 auto;">📱</div>
+          <div class="call-number" style="margin-top:14px;">064-XXX-XX21</div>
+          <div class="call-status-text" id="call-timer">00:00</div>
+        </div>
+
+        <div class="call-actions" style="margin-top:10px;margin-bottom:30px;">
+          <div>
+            <button class="call-action-btn decline" id="hangup-btn">✕</button>
+            <div class="call-action-label">วางสาย</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ขั้นที่ 3: แจ้งเตือนความเสี่ยงสูง -->
+      <div class="alert-panel" id="alert-panel" style="display:none;">
+        <div class="alert-icon">⚠️</div>
+        <h2>ตรวจพบเสียงสังเคราะห์ผิดปกติ</h2>
+        <p>ระบบ AI ตรวจพบความเสี่ยงสูงว่าคู่สนทนาใช้เสียงสังเคราะห์ (Risk Score <span id="alert-risk-score">87</span>%)</p>
+        <div class="alert-actions">
+          <button class="btn btn-lg" id="hangup-now-btn" style="background:#fff;color:var(--coral-dark);font-weight:700;">📵 วางสายทันที</button>
+          <button class="btn btn-ghost btn-lg" id="view-detail-btn" style="border-color:rgba(255,255,255,0.6);color:#fff;">ดูรายละเอียด</button>
+        </div>
+      </div>
+
+      <!-- ขั้นที่ 4: รายละเอียดผลวิเคราะห์เชิงลึก -->
+      <div class="breakdown-panel" id="breakdown-panel" style="display:none;">
+        <h2>ผลวิเคราะห์เชิงลึก</h2>
+        <div id="breakdown-list"></div>
+        <button class="btn btn-primary btn-block" id="breakdown-hangup-btn" style="margin-top:22px;">📵 วางสายทันที</button>
+        <button class="btn btn-ghost btn-block" id="breakdown-back-btn" style="margin-top:10px;color:#fff;border-color:rgba(255,255,255,0.4);">ย้อนกลับ</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/call-simulation.js"></script>
+</body>
+</html>

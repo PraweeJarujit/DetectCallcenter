@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปผลการวิเคราะห์ | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="container" style="padding-top:20px;">
+  <div class="navbar">
+    <a href="dashboard.html" class="brand">
+      <span class="logo-mark">🛡️</span> VoiceGuard AI
+    </a>
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">← กลับ Dashboard</a>
+  </div>
+</div>
+
+<div class="container" style="max-width:640px;padding-bottom:60px;">
+  <div class="card" style="text-align:center;">
+    <div class="badge badge-danger" style="margin-bottom:16px;">ผลการวิเคราะห์: เสี่ยงสูง</div>
+    <h1 style="font-size:22px;">สรุปผลการตรวจจับเสียงสังเคราะห์</h1>
+
+    <div class="gauge-wrap">
+      <svg id="gauge-svg" width="240" height="140" viewBox="0 0 240 140"></svg>
+      <div class="gauge-value" id="gauge-value">0%</div>
+      <div class="gauge-caption">Risk Score</div>
+    </div>
+
+    <div style="text-align:left;margin-top:24px;">
+      <div class="toggle-row">
+        <span style="color:var(--gray-text);">เบอร์โทรที่ตรวจพบ</span>
+        <strong id="report-phone">—</strong>
+      </div>
+      <div class="toggle-row">
+        <span style="color:var(--gray-text);">เวลาที่ตรวจพบ</span>
+        <strong id="report-time">—</strong>
+      </div>
+      <div class="toggle-row" style="align-items:flex-start;">
+        <span style="color:var(--gray-text);">สรุปเหตุผล</span>
+        <strong id="report-reason" style="text-align:right;max-width:60%;">—</strong>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:28px;">
+      <button class="btn btn-primary btn-lg" id="submit-report-btn">🚨 แจ้งเบาะแสไปยังหน่วยงาน</button>
+      <a href="dashboard.html" class="btn btn-ghost btn-lg">กลับสู่ Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  // ดึงข้อมูลสายล่าสุดจาก localStorage (มาจากหน้า call-demo) ถ้าไม่มีใช้ mock เริ่มต้น
+  function getCallData() {
+    const raw = localStorage.getItem("vg_last_call");
+    if (raw) {
+      try { return JSON.parse(raw); } catch (e) {}
+    }
+    return {
+      phone: "064-XXX-XX21",
+      risk_score: 87,
+      detected_at: new Date().toLocaleString("th-TH"),
+    };
+  }
+
+  const callData = getCallData();
+  document.getElementById("report-phone").textContent = callData.phone;
+  document.getElementById("report-time").textContent = callData.detected_at;
+  document.getElementById("report-reason").textContent =
+    "ตรวจพบลักษณะเสียงสังเคราะห์ (voice cloning) ความน่าจะเป็นสูง ร่วมกับรูปแบบการหลอกลวงให้โอนเงินด่วน";
+
+  /* วาด gauge แบบครึ่งวงกลมด้วย SVG arc พร้อม animate กวาดจาก 0 ไปยังค่าจริง */
+  function drawGauge(score) {
+    const svg = document.getElementById("gauge-svg");
+    const cx = 120, cy = 120, r = 100;
+    const startAngle = Math.PI; // 180 องศา (ซ้าย)
+    const endAngle = 0; // 0 องศา (ขวา)
+
+    function pointOnArc(angle) {
+      return { x: cx + r * Math.cos(angle), y: cy - r * Math.sin(angle) };
+    }
+
+    function arcPath(a1, a2) {
+      const p1 = pointOnArc(a1);
+      const p2 = pointOnArc(a2);
+      const largeArc = Math.abs(a1 - a2) > Math.PI ? 1 : 0;
+      return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
+    }
+
+    const color = score >= 80 ? "#E4572E" : score >= 50 ? "#E0A429" : "#2E9E5B";
+    const valueEl = document.getElementById("gauge-value");
+    valueEl.style.color = color;
+
+    function render(current) {
+      const scoreAngle = startAngle - (startAngle - endAngle) * (current / 100);
+      svg.innerHTML = `
+        <path d="${arcPath(startAngle, endAngle)}" stroke="#EAF1FD" stroke-width="18" fill="none" stroke-linecap="round" />
+        ${current > 0.5 ? `<path d="${arcPath(startAngle, scoreAngle)}" stroke="${color}" stroke-width="18" fill="none" stroke-linecap="round" />` : ""}
+      `;
+      valueEl.textContent = Math.round(current) + "%";
+    }
+
+    const duration = 1100;
+    const start = performance.now();
+    function frame(now) {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      render(score * eased);
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    // กัน rAF โดนหยุดตอนแท็บอยู่ background: วาดค่าสุดท้ายเสมอ
+    setTimeout(() => render(score), duration + 150);
+  }
+
+  drawGauge(callData.risk_score);
+
+  document.getElementById("submit-report-btn").addEventListener("click", async () => {
+    try {
+      await apiPost("/calls/report", {
+        phone: callData.phone,
+        risk_score: callData.risk_score,
+        note: "แจ้งเบาะแสจากหน้า Report Summary (demo)",
+      });
+    } catch (e) {
+      // แม้ backend ไม่ตอบ ก็ยังแสดงผลว่าส่งสำเร็จ เพื่อไม่ให้ demo สะดุด
+    }
+    showToast("✅ ส่งรายงานสำเร็จ");
+  });
+</script>
+</body>
+</html>

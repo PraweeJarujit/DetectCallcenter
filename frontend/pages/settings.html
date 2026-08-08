@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตั้งค่า | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo-mark">🛡️</span>
+      VoiceGuard AI
+    </div>
+    <nav>
+      <a href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a href="dashboard.html#logs"><span class="nav-icon">📋</span><span class="nav-label">Call Logs</span></a>
+      <a href="report-summary.html"><span class="nav-icon">📄</span><span class="nav-label">Report</span></a>
+      <a href="settings.html" class="active"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
+      <a href="call-demo.html"><span class="nav-icon">📞</span><span class="nav-label">Call Demo</span></a>
+    </nav>
+    <div class="role-chip" id="role-chip">กำลังโหลดผู้ใช้...</div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>ตั้งค่า</h1>
+        <p class="subtitle">จัดการผู้ติดต่อฉุกเฉินและการแจ้งเตือนอัตโนมัติ</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title">การแจ้งเตือนอัตโนมัติ</div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:600;">แจ้งเตือนผู้ติดต่อฉุกเฉินอัตโนมัติเมื่อความเสี่ยงสูง</div>
+          <div style="color:var(--gray-text);font-size:13px;margin-top:4px;">
+            ระบบจะส่ง SMS/แจ้งเตือนไปยังผู้ติดต่อฉุกเฉินทันทีเมื่อพบ Risk Score เกิน 80%
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="auto-notify-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ผู้ติดต่อฉุกเฉิน</div>
+      <div id="contact-list"></div>
+
+      <div class="add-contact-form">
+        <input type="text" id="new-contact-name" placeholder="ชื่อผู้ติดต่อ">
+        <input type="text" id="new-contact-phone" placeholder="เบอร์โทร">
+        <button class="btn btn-primary" id="add-contact-btn">+ เพิ่มผู้ติดต่อ</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  const currentUser = getCurrentUser();
+  document.getElementById("role-chip").textContent = currentUser
+    ? `👤 ${currentUser.username} · ${currentUser.role_label}`
+    : "👤 โหมดผู้เยี่ยมชม (Guest)";
+
+  // mock ผู้ติดต่อฉุกเฉิน เก็บใน localStorage ฝั่ง client เท่านั้น (ไม่เชื่อม backend จริง)
+  const STORAGE_KEY = "vg_emergency_contacts";
+
+  function loadContacts() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try { return JSON.parse(raw); } catch (e) {}
+    }
+    return [
+      { name: "คุณสมชาย (ลูกชาย)", phone: "081-555-1234" },
+      { name: "สถานีตำรวจไซเบอร์", phone: "1441" },
+    ];
+  }
+
+  function saveContacts(contacts) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+  }
+
+  let contacts = loadContacts();
+
+  function renderContacts() {
+    const list = document.getElementById("contact-list");
+    if (contacts.length === 0) {
+      list.innerHTML = "<p style='color:var(--gray-text);'>ยังไม่มีผู้ติดต่อฉุกเฉิน</p>";
+      return;
+    }
+    list.innerHTML = contacts.map((c, i) => `
+      <div class="contact-item">
+        <div class="contact-info">
+          <div class="icon-circle ice" style="width:40px;height:40px;font-size:18px;">👤</div>
+          <div>
+            <div class="contact-name">${c.name}</div>
+            <div class="contact-phone">${c.phone}</div>
+          </div>
+        </div>
+        <button class="icon-btn" data-index="${i}" title="ลบ">✕</button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll(".icon-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        contacts.splice(idx, 1);
+        saveContacts(contacts);
+        renderContacts();
+        showToast("ลบผู้ติดต่อแล้ว");
+      });
+    });
+  }
+
+  document.getElementById("add-contact-btn").addEventListener("click", () => {
+    const nameInput = document.getElementById("new-contact-name");
+    const phoneInput = document.getElementById("new-contact-phone");
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+
+    if (!name || !phone) {
+      showToast("กรุณากรอกชื่อและเบอร์โทรให้ครบ");
+      return;
+    }
+
+    contacts.push({ name, phone });
+    saveContacts(contacts);
+    renderContacts();
+    nameInput.value = "";
+    phoneInput.value = "";
+    showToast("เพิ่มผู้ติดต่อฉุกเฉินสำเร็จ");
+  });
+
+  // toggle การแจ้งเตือนอัตโนมัติ (mock เก็บ state ไว้ใน localStorage)
+  const toggle = document.getElementById("auto-notify-toggle");
+  const savedToggle = localStorage.getItem("vg_auto_notify");
+  if (savedToggle !== null) toggle.checked = savedToggle === "true";
+
+  toggle.addEventListener("change", () => {
+    localStorage.setItem("vg_auto_notify", toggle.checked);
+    showToast(toggle.checked ? "เปิดใช้งานการแจ้งเตือนอัตโนมัติ" : "ปิดใช้งานการแจ้งเตือนอัตโนมัติ");
+  });
+
+  renderContacts();
+</script>
+</body>
+</html>
