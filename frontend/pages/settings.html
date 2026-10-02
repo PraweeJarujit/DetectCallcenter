@@ -19,6 +19,7 @@
       <a href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
       <a href="dashboard.html#logs"><span class="nav-icon">📋</span><span class="nav-label">Call Logs</span></a>
       <a href="report-summary.html"><span class="nav-icon">📄</span><span class="nav-label">Report</span></a>
+      <a href="blacklist.html"><span class="nav-icon">🚫</span><span class="nav-label">Blacklist</span></a>
       <a href="settings.html" class="active"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
       <a href="call-demo.html"><span class="nav-icon">📞</span><span class="nav-label">Call Demo</span></a>
     </nav>
@@ -31,6 +32,7 @@
         <h1>ตั้งค่า</h1>
         <p class="subtitle">จัดการผู้ติดต่อฉุกเฉินและการแจ้งเตือนอัตโนมัติ</p>
       </div>
+      <a href="login.html" class="btn btn-ghost btn-sm" data-logout>ออกจากระบบ</a>
     </div>
 
     <div class="card" style="margin-bottom:24px;">
@@ -53,102 +55,187 @@
       <div class="card-title">ผู้ติดต่อฉุกเฉิน</div>
       <div id="contact-list"></div>
 
-      <div class="add-contact-form">
-        <input type="text" id="new-contact-name" placeholder="ชื่อผู้ติดต่อ">
-        <input type="text" id="new-contact-phone" placeholder="เบอร์โทร">
-        <button class="btn btn-primary" id="add-contact-btn">+ เพิ่มผู้ติดต่อ</button>
-      </div>
+      <form class="add-contact-form" id="add-contact-form" novalidate>
+        <input type="text" id="new-contact-name" placeholder="ชื่อผู้ติดต่อ" maxlength="100" aria-label="ชื่อผู้ติดต่อ">
+        <input type="tel" id="new-contact-phone" placeholder="เบอร์โทร เช่น 081-555-1234" maxlength="20" aria-label="เบอร์โทร">
+        <button type="submit" class="btn btn-primary" id="add-contact-btn">+ เพิ่มผู้ติดต่อ</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">เปลี่ยนรหัสผ่าน</div>
+      <form id="password-form" class="stack-form" novalidate>
+        <div class="form-group">
+          <label for="old-password">รหัสผ่านเดิม</label>
+          <input type="password" id="old-password" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label for="new-password">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว มีตัวอักษรและตัวเลข)</label>
+          <input type="password" id="new-password" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-navy" id="password-btn">บันทึกรหัสผ่านใหม่</button>
+      </form>
     </div>
   </main>
 </div>
 
 <script src="../js/api.js"></script>
 <script>
-  const currentUser = getCurrentUser();
-  document.getElementById("role-chip").textContent = currentUser
-    ? `👤 ${currentUser.username} · ${currentUser.role_label}`
-    : "👤 โหมดผู้เยี่ยมชม (Guest)";
+  /*
+    หน้า Settings = ตัวอย่าง CRUD ครบ 4 method ผ่าน Fetch API
+      GET    /api/contacts          โหลดรายการ
+      POST   /api/contacts          เพิ่ม
+      PUT    /api/contacts/{id}     แก้ไข (กด ✎ แก้ inline)
+      DELETE /api/contacts/{id}     ลบ
+      PUT    /api/users/{me}        เปิด/ปิดแจ้งเตือนอัตโนมัติ
+  */
+  const currentUser = requireLogin();
+  renderUserChip();
 
-  // mock ผู้ติดต่อฉุกเฉิน เก็บใน localStorage ฝั่ง client เท่านั้น (ไม่เชื่อม backend จริง)
-  const STORAGE_KEY = "vg_emergency_contacts";
+  let contacts = [];        // state ฝั่ง client (แหล่งความจริงคือ backend)
+  let editingId = null;     // id ที่กำลังแก้ inline
 
-  function loadContacts() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try { return JSON.parse(raw); } catch (e) {}
+  const listEl = document.getElementById("contact-list");
+
+  async function loadContacts() {
+    listEl.innerHTML = "<p style='color:var(--gray-text);'>กำลังโหลด...</p>";
+    try {
+      contacts = await apiGet("/contacts");
+      renderContacts();
+    } catch (err) {
+      listEl.innerHTML = `<p style='color:var(--coral-dark);'>⚠️ ${escapeHtml(errorMessage(err))}</p>`;
     }
-    return [
-      { name: "คุณสมชาย (ลูกชาย)", phone: "081-555-1234" },
-      { name: "สถานีตำรวจไซเบอร์", phone: "1441" },
-    ];
   }
-
-  function saveContacts(contacts) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
-  }
-
-  let contacts = loadContacts();
 
   function renderContacts() {
-    const list = document.getElementById("contact-list");
     if (contacts.length === 0) {
-      list.innerHTML = "<p style='color:var(--gray-text);'>ยังไม่มีผู้ติดต่อฉุกเฉิน</p>";
+      listEl.innerHTML = "<p style='color:var(--gray-text);'>ยังไม่มีผู้ติดต่อฉุกเฉิน</p>";
       return;
     }
-    list.innerHTML = contacts.map((c, i) => `
+    listEl.innerHTML = contacts.map((c) => editingId === c.id ? `
+      <form class="contact-item" data-edit-form="${escapeHtml(c.id)}">
+        <div class="contact-info" style="gap:8px;flex:1;">
+          <input type="text" name="name" value="${escapeHtml(c.name)}" maxlength="100" aria-label="ชื่อ" class="inline-input">
+          <input type="tel" name="phone_number" value="${escapeHtml(c.phone_number)}" maxlength="20" aria-label="เบอร์โทร" class="inline-input">
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="submit" class="btn btn-primary btn-sm">บันทึก</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-cancel>ยกเลิก</button>
+        </div>
+      </form>` : `
       <div class="contact-item">
         <div class="contact-info">
           <div class="icon-circle ice" style="width:40px;height:40px;font-size:18px;">👤</div>
           <div>
-            <div class="contact-name">${c.name}</div>
-            <div class="contact-phone">${c.phone}</div>
+            <div class="contact-name">${escapeHtml(c.name)}</div>
+            <div class="contact-phone">${escapeHtml(formatPhone(c.phone_number))}</div>
           </div>
         </div>
-        <button class="icon-btn" data-index="${i}" title="ลบ">✕</button>
-      </div>
-    `).join("");
-
-    list.querySelectorAll(".icon-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.dataset.index, 10);
-        contacts.splice(idx, 1);
-        saveContacts(contacts);
-        renderContacts();
-        showToast("ลบผู้ติดต่อแล้ว");
-      });
-    });
+        <div style="display:flex;gap:6px;">
+          <button class="icon-btn" data-edit="${escapeHtml(c.id)}" title="แก้ไข" aria-label="แก้ไข">✎</button>
+          <button class="icon-btn" data-delete="${escapeHtml(c.id)}" title="ลบ" aria-label="ลบ">✕</button>
+        </div>
+      </div>`).join("");
   }
 
-  document.getElementById("add-contact-btn").addEventListener("click", () => {
+  // event delegation สำหรับปุ่มในรายการ
+  listEl.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("[data-edit]");
+    const delBtn = e.target.closest("[data-delete]");
+    if (e.target.closest("[data-cancel]")) {
+      editingId = null;
+      return renderContacts();
+    }
+    if (editBtn) {
+      editingId = editBtn.dataset.edit;
+      return renderContacts();
+    }
+    if (delBtn) {
+      const c = contacts.find((x) => x.id === delBtn.dataset.delete);
+      if (!c || !confirm(`ลบผู้ติดต่อ "${c.name}" ?`)) return;
+      try {
+        await apiDelete(`/contacts/${encodeURIComponent(c.id)}`);
+        contacts = contacts.filter((x) => x.id !== c.id);
+        renderContacts();
+        showToast("ลบผู้ติดต่อแล้ว");
+      } catch (err) {
+        showError(err);
+      }
+    }
+  });
+
+  listEl.addEventListener("submit", async (e) => {
+    const form = e.target.closest("[data-edit-form]");
+    if (!form) return;
+    e.preventDefault();
+    const id = form.dataset.editForm;
+    const body = { name: form.name.value.trim(), phone_number: form.phone_number.value.trim() };
+    try {
+      const updated = await apiPut(`/contacts/${encodeURIComponent(id)}`, body);
+      contacts = contacts.map((c) => (c.id === id ? updated : c));
+      editingId = null;
+      renderContacts();
+      showToast("✅ แก้ไขผู้ติดต่อแล้ว", 2600, "success");
+    } catch (err) {
+      showError(err);
+    }
+  });
+
+  document.getElementById("add-contact-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
     const nameInput = document.getElementById("new-contact-name");
     const phoneInput = document.getElementById("new-contact-phone");
     const name = nameInput.value.trim();
     const phone = phoneInput.value.trim();
-
     if (!name || !phone) {
       showToast("กรุณากรอกชื่อและเบอร์โทรให้ครบ");
       return;
     }
-
-    contacts.push({ name, phone });
-    saveContacts(contacts);
-    renderContacts();
-    nameInput.value = "";
-    phoneInput.value = "";
-    showToast("เพิ่มผู้ติดต่อฉุกเฉินสำเร็จ");
+    await withLoading(document.getElementById("add-contact-btn"), async () => {
+      try {
+        const created = await apiPost("/contacts", { name, phone_number: phone });
+        contacts.push(created);
+        renderContacts();
+        nameInput.value = "";
+        phoneInput.value = "";
+        showToast("✅ เพิ่มผู้ติดต่อฉุกเฉินสำเร็จ", 2600, "success");
+      } catch (err) {
+        showError(err);
+      }
+    }, "กำลังบันทึก...");
   });
 
-  // toggle การแจ้งเตือนอัตโนมัติ (mock เก็บ state ไว้ใน localStorage)
+  // toggle การแจ้งเตือนอัตโนมัติ -> บันทึกลง users.auto_notify ผ่าน PUT /users/{id}
   const toggle = document.getElementById("auto-notify-toggle");
-  const savedToggle = localStorage.getItem("vg_auto_notify");
-  if (savedToggle !== null) toggle.checked = savedToggle === "true";
-
-  toggle.addEventListener("change", () => {
-    localStorage.setItem("vg_auto_notify", toggle.checked);
-    showToast(toggle.checked ? "เปิดใช้งานการแจ้งเตือนอัตโนมัติ" : "ปิดใช้งานการแจ้งเตือนอัตโนมัติ");
+  if (currentUser) toggle.checked = currentUser.auto_notify !== false;
+  toggle.addEventListener("change", async () => {
+    const wanted = toggle.checked;
+    try {
+      const updated = await apiPut(`/users/${encodeURIComponent(currentUser.id)}`, { auto_notify: wanted });
+      updateStoredUser(updated);
+      showToast(wanted ? "เปิดใช้งานการแจ้งเตือนอัตโนมัติ" : "ปิดใช้งานการแจ้งเตือนอัตโนมัติ");
+    } catch (err) {
+      toggle.checked = !wanted; // rollback UI ถ้าบันทึกไม่สำเร็จ
+      showError(err);
+    }
   });
 
-  renderContacts();
+  document.getElementById("password-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const oldPw = document.getElementById("old-password");
+    const newPw = document.getElementById("new-password");
+    await withLoading(document.getElementById("password-btn"), async () => {
+      try {
+        await apiPost("/change-password", { old_password: oldPw.value, new_password: newPw.value });
+        oldPw.value = newPw.value = "";
+        showToast("✅ เปลี่ยนรหัสผ่านสำเร็จ", 2600, "success");
+      } catch (err) {
+        showError(err);
+      }
+    }, "กำลังบันทึก...");
+  });
+
+  if (currentUser) loadContacts();
 </script>
 </body>
 </html>

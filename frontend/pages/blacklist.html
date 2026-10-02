@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blacklist | VoiceGuard AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo-mark">🛡️</span>
+      VoiceGuard AI
+    </div>
+    <nav>
+      <a href="dashboard.html"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a href="dashboard.html#logs"><span class="nav-icon">📋</span><span class="nav-label">Call Logs</span></a>
+      <a href="report-summary.html"><span class="nav-icon">📄</span><span class="nav-label">Report</span></a>
+      <a href="blacklist.html" class="active"><span class="nav-icon">🚫</span><span class="nav-label">Blacklist</span></a>
+      <a href="settings.html"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a>
+      <a href="call-demo.html"><span class="nav-icon">📞</span><span class="nav-label">Call Demo</span></a>
+    </nav>
+    <div class="role-chip" id="role-chip">กำลังโหลดผู้ใช้...</div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Blacklist เบอร์มิจฉาชีพ</h1>
+        <p class="subtitle">ค้นหา ตรวจสอบ และจัดการเบอร์ที่ถูกแจ้งเบาะแส <span id="admin-hint"></span></p>
+      </div>
+      <a href="login.html" class="btn btn-ghost btn-sm" data-logout>ออกจากระบบ</a>
+    </div>
+
+    <!-- ตรวจเบอร์ด่วน: POST /api/detect/number -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title">ตรวจสอบเบอร์โทร</div>
+      <form class="toolbar" id="check-form" novalidate>
+        <input type="tel" id="check-phone" placeholder="เช่น 081-234-5678 หรือ +66 81 234 5678" maxlength="20" aria-label="เบอร์ที่ต้องการตรวจ">
+        <button type="submit" class="btn btn-navy" id="check-btn">ตรวจสอบ</button>
+      </form>
+      <div id="check-result" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span>รายการ Blacklist <small id="total-label" style="color:var(--gray-soft);font-weight:500;"></small></span>
+        <button class="btn btn-primary btn-sm" id="add-btn" hidden>+ เพิ่มเบอร์</button>
+      </div>
+
+      <!-- GET /api/blacklist?q=&status=&page= -->
+      <form class="toolbar" id="filter-form" novalidate>
+        <input type="search" id="q" placeholder="ค้นหาเบอร์ที่ขึ้นต้นด้วย เช่น 0812" maxlength="12" inputmode="numeric" aria-label="ค้นหาเบอร์">
+        <select id="status" aria-label="กรองตามสถานะ">
+          <option value="">ทุกสถานะ</option>
+          <option value="high_risk">เสี่ยงสูง</option>
+          <option value="suspect">น่าสงสัย</option>
+          <option value="safe">ปลอดภัย</option>
+        </select>
+        <button type="submit" class="btn btn-ghost">ค้นหา</button>
+      </form>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>เบอร์โทร</th>
+              <th>สถานะ</th>
+              <th>Risk Score</th>
+              <th>ถูกแจ้ง (ครั้ง)</th>
+              <th>แจ้งล่าสุด</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="bl-tbody">
+            <tr><td colspan="6">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button class="btn btn-ghost btn-sm" id="prev-btn" disabled>← ก่อนหน้า</button>
+        <span id="page-label">หน้า 1</span>
+        <button class="btn btn-ghost btn-sm" id="next-btn" disabled>ถัดไป →</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  /*
+    หน้า Blacklist (admin interface)
+      ทุกคน   : GET /blacklist (ค้นหา/กรอง/แบ่งหน้า), POST /detect/number
+      login   : GET /blacklist/{phone} (รายละเอียด + report ทั้งหมด)
+      admin   : POST / PUT / DELETE /blacklist
+  */
+  const user = getCurrentUser();
+  renderUserChip();
+  const admin = isAdmin();
+  document.getElementById("add-btn").hidden = !admin;
+  document.getElementById("admin-hint").textContent = admin ? "(โหมดผู้ดูแลระบบ: เพิ่ม/แก้ไข/ลบได้)" : "";
+
+  const PAGE_SIZE = 15;
+  const BADGE = { safe: "badge-safe", suspect: "badge-suspect", high_risk: "badge-danger" };
+  const state = { page: 1, q: "", status: "", total: 0, items: [] };
+
+  // รับ ?q= จากหน้าอื่น (เช่น modal ใน dashboard)
+  const initialQ = new URLSearchParams(location.search).get("q");
+  if (initialQ) {
+    state.q = initialQ.replace(/\D/g, "").slice(0, 10);
+    document.getElementById("q").value = state.q;
+  }
+
+  async function loadList() {
+    const tbody = document.getElementById("bl-tbody");
+    const params = new URLSearchParams({ page: state.page, page_size: PAGE_SIZE });
+    if (state.q) params.set("q", state.q);
+    if (state.status) params.set("status", state.status);
+    try {
+      const data = await apiGet(`/blacklist?${params}`, { auth: false });
+      state.total = data.total;
+      state.items = data.items;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6">⚠️ ${escapeHtml(errorMessage(err))}</td></tr>`;
+      return;
+    }
+    const pages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+    document.getElementById("total-label").textContent = `(${state.total.toLocaleString("th-TH")} เบอร์)`;
+    document.getElementById("page-label").textContent = `หน้า ${state.page} / ${pages}`;
+    document.getElementById("prev-btn").disabled = state.page <= 1;
+    document.getElementById("next-btn").disabled = state.page >= pages;
+
+    if (state.items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6">ไม่พบข้อมูล</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = state.items.map((it) => `
+      <tr>
+        <td><strong>${escapeHtml(formatPhone(it.phone_number))}</strong></td>
+        <td><span class="badge ${BADGE[it.status]}">${escapeHtml(it.status_label)}</span></td>
+        <td>${Number(it.risk_score)}%</td>
+        <td>${Number(it.report_count)}</td>
+        <td>${escapeHtml(formatDateTime(it.last_reported_at))}</td>
+        <td class="row-actions">
+          <button class="btn btn-ghost btn-sm" data-view="${escapeHtml(it.phone_number)}">ดู</button>
+          ${admin ? `<button class="btn btn-ghost btn-sm" data-edit="${escapeHtml(it.phone_number)}">แก้ไข</button>
+                     <button class="btn btn-ghost btn-sm danger" data-del="${escapeHtml(it.phone_number)}">ลบ</button>` : ""}
+        </td>
+      </tr>`).join("");
+  }
+
+  document.getElementById("filter-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = document.getElementById("q").value.replace(/[\s-]/g, "");
+    if (q && !/^\d{1,10}$/.test(q)) {
+      showToast("ค้นหาได้เฉพาะตัวเลข (เบอร์ที่ขึ้นต้นด้วย...)");
+      return;
+    }
+    state.q = q;
+    state.status = document.getElementById("status").value;
+    state.page = 1;
+    loadList();
+  });
+  document.getElementById("prev-btn").addEventListener("click", () => { state.page--; loadList(); });
+  document.getElementById("next-btn").addEventListener("click", () => { state.page++; loadList(); });
+
+  /* ---------- modal helper ---------- */
+  function openModal(html) {
+    closeModal();
+    const modal = document.createElement("div");
+    modal.id = "bl-modal";
+    modal.className = "modal-backdrop";
+    modal.innerHTML = `<div class="card modal-card">${html}</div>`;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal || e.target.closest("[data-close]")) closeModal();
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function closeModal() {
+    const m = document.getElementById("bl-modal");
+    if (m) m.remove();
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  async function showDetail(phone) {
+    if (!user) {
+      showToast("กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดการแจ้ง");
+      return;
+    }
+    const modal = openModal(`<p>กำลังโหลด...</p>`);
+    try {
+      const d = await apiGet(`/blacklist/${encodeURIComponent(phone)}`);
+      modal.querySelector(".modal-card").innerHTML = `
+        <h3 style="font-size:22px;font-weight:800;">${escapeHtml(formatPhone(d.phone_number))}</h3>
+        <p style="margin:6px 0 14px;"><span class="badge ${BADGE[d.status]}">${escapeHtml(d.status_label)}</span>
+          · Risk ${Number(d.risk_score)}% · ถูกแจ้ง ${Number(d.report_count)} ครั้ง</p>
+        <div class="card-title" style="font-size:15px;">การแจ้งเบาะแสล่าสุด</div>
+        <div class="report-list">
+          ${d.reports.length === 0 ? "<p style='color:var(--gray-text);'>ยังไม่มีรายละเอียดการแจ้ง</p>" :
+            d.reports.map((r) => `
+              <div class="report-item">
+                <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--gray-text);">
+                  <span>👤 ${escapeHtml(r.reporter_username || "ผู้ใช้ที่ถูกลบ")}</span>
+                  <span>${escapeHtml(formatDateTime(r.created_at))}</span>
+                </div>
+                <div style="margin-top:4px;">${r.categories.map((c) => `<span class="chip-static">${escapeHtml(c.name)}</span>`).join(" ")}</div>
+                ${r.note ? `<p style="margin-top:6px;">${escapeHtml(r.note)}</p>` : ""}
+              </div>`).join("")}
+        </div>
+        <button class="btn btn-navy btn-block" style="margin-top:18px;" data-close>ปิด</button>`;
+    } catch (err) {
+      closeModal();
+      showError(err);
+    }
+  }
+
+  function showEditor(item) {
+    const isNew = !item;
+    const modal = openModal(`
+      <h3 style="font-size:20px;font-weight:800;margin-bottom:14px;">${isNew ? "เพิ่มเบอร์เข้า Blacklist" : "แก้ไข " + escapeHtml(formatPhone(item.phone_number))}</h3>
+      <form id="edit-form" novalidate>
+        ${isNew ? `<div class="form-group"><label for="f-phone">เบอร์โทร</label>
+          <input type="tel" id="f-phone" maxlength="20" placeholder="0812345678"></div>` : ""}
+        <div class="form-group"><label for="f-score">Risk Score (0-100)</label>
+          <input type="number" id="f-score" min="0" max="100" value="${item ? Number(item.risk_score) : 80}"></div>
+        <div class="form-group"><label for="f-status">สถานะ</label>
+          <select id="f-status">
+            <option value="">คำนวณจาก Risk Score อัตโนมัติ</option>
+            <option value="high_risk">เสี่ยงสูง</option>
+            <option value="suspect">น่าสงสัย</option>
+            <option value="safe">ปลอดภัย</option>
+          </select></div>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn btn-ghost btn-block" data-close>ยกเลิก</button>
+          <button type="submit" class="btn btn-primary btn-block" id="f-save">บันทึก</button>
+        </div>
+      </form>`);
+    modal.querySelector("#edit-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const score = Number(modal.querySelector("#f-score").value);
+      const status = modal.querySelector("#f-status").value || null;
+      if (!Number.isInteger(score) || score < 0 || score > 100) {
+        showToast("Risk Score ต้องเป็นจำนวนเต็ม 0-100");
+        return;
+      }
+      await withLoading(modal.querySelector("#f-save"), async () => {
+        try {
+          if (isNew) {
+            const phone = modal.querySelector("#f-phone").value.trim();
+            await apiPost("/blacklist", { phone_number: phone, risk_score: score, status });
+            showToast("✅ เพิ่มเบอร์แล้ว", 2600, "success");
+          } else {
+            const body = { risk_score: score };
+            if (status) body.status = status;
+            await apiPut(`/blacklist/${encodeURIComponent(item.phone_number)}`, body);
+            showToast("✅ บันทึกการแก้ไขแล้ว", 2600, "success");
+          }
+          closeModal();
+          loadList();
+        } catch (err) {
+          showError(err);
+        }
+      }, "กำลังบันทึก...");
+    });
+  }
+
+  async function deleteNumber(phone) {
+    if (!confirm(`ลบ ${formatPhone(phone)} ออกจาก blacklist?\n(การแจ้งเบาะแสทั้งหมดของเบอร์นี้จะถูกลบด้วย)`)) return;
+    try {
+      const res = await apiDelete(`/blacklist/${encodeURIComponent(phone)}`);
+      showToast(res.message);
+      if (state.items.length === 1 && state.page > 1) state.page--;
+      loadList();
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  document.getElementById("bl-tbody").addEventListener("click", (e) => {
+    const view = e.target.closest("[data-view]");
+    const edit = e.target.closest("[data-edit]");
+    const del = e.target.closest("[data-del]");
+    if (view) showDetail(view.dataset.view);
+    if (edit) showEditor(state.items.find((i) => i.phone_number === edit.dataset.edit));
+    if (del) deleteNumber(del.dataset.del);
+  });
+  document.getElementById("add-btn").addEventListener("click", () => showEditor(null));
+
+  /* ---------- ตรวจเบอร์ด่วน ---------- */
+  document.getElementById("check-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const box = document.getElementById("check-result");
+    const phone = document.getElementById("check-phone").value.trim();
+    if (!phone) return showToast("กรุณากรอกเบอร์โทร");
+    await withLoading(document.getElementById("check-btn"), async () => {
+      try {
+        const r = await apiPost("/detect/number", { phone_number: phone });
+        box.innerHTML = `
+          <div class="check-result ${r.status}">
+            <strong>${escapeHtml(formatPhone(r.phone_number))}</strong>
+            <span class="badge ${BADGE[r.status]}">${escapeHtml(r.status_label)}</span>
+            <span>Risk ${Number(r.risk_score)}% · ถูกแจ้ง ${Number(r.report_count)} ครั้ง</span>
+          </div>`;
+      } catch (err) {
+        box.innerHTML = `<div class="check-result high_risk">⚠️ ${escapeHtml(errorMessage(err))}</div>`;
+      }
+    }, "กำลังตรวจ...");
+  });
+
+  loadList();
+</script>
+</body>
+</html>

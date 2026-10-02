@@ -1210,3 +1210,129 @@ table.data-table tr:last-child td { border-bottom: none; }
   .cta-banner { padding: 24px; }
   .reset-demo-btn { top: auto; bottom: 20px; }
 }
+
+/* =========================================================
+   เพิ่มเติม Week 7-8: ฟอร์ม, error, modal, toolbar, pagination
+   ========================================================= */
+.form-group select,
+.form-group textarea,
+.toolbar input,
+.toolbar select,
+.inline-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #dfe4f0;
+  font-family: inherit;
+  font-size: 15px;
+  background: var(--white);
+  color: var(--navy);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-group select:focus,
+.form-group textarea:focus,
+.toolbar input:focus,
+.toolbar select:focus,
+.inline-input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(30, 39, 97, 0.10);
+}
+.inline-input { padding: 8px 12px; font-size: 14px; }
+
+.field-error { color: var(--coral-dark); font-size: 13px; margin-top: 6px; min-height: 0; }
+.field-error:empty { display: none; }
+.form-error {
+  background: var(--coral-soft);
+  color: var(--coral-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.toast { white-space: normal; max-width: min(92vw, 520px); text-align: center; border-radius: 18px; }
+.toast[data-type="error"] { background: var(--coral-dark); }
+.toast[data-type="success"] { background: var(--success); }
+
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.toolbar input { flex: 1 1 220px; }
+.toolbar select { flex: 0 1 180px; }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--gray-text);
+}
+.row-actions { white-space: nowrap; display: flex; gap: 6px; justify-content: flex-end; }
+.btn.danger { color: var(--coral-dark); }
+.btn.danger:hover { background: var(--coral-soft); border-color: var(--coral); }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 18, 51, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+}
+.modal-card { max-width: 520px; width: 100%; max-height: 88vh; overflow-y: auto; }
+
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #dfe4f0;
+  background: var(--white);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.chip:has(input:checked) { border-color: var(--coral); background: var(--coral-soft); }
+.chip input { accent-color: var(--coral); }
+.chip-static {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ice-soft);
+  font-size: 12.5px;
+  margin: 2px 2px 0 0;
+}
+
+.report-list { display: flex; flex-direction: column; gap: 10px; }
+.report-item { border: 1px solid #e6ebf5; border-radius: var(--radius-sm); padding: 10px 14px; text-align: left; }
+
+.check-result {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--ice-soft);
+}
+.check-result.high_risk { background: var(--coral-soft); }
+
+.empty-state { text-align: center; color: var(--gray-text); padding: 30px 10px; }
+.stack-form { max-width: 420px; }
+
+/* มือถือ: เมนูมี 6 รายการ -> ขึ้นบรรทัดใหม่ใต้โลโก้ และเลื่อนแนวนอนได้ ไม่ดันหน้าให้ล้นจอ */
+@media (max-width: 600px) {
+  .sidebar { flex-wrap: wrap; }
+  .sidebar nav { width: 100%; min-width: 0; justify-content: space-between; }
+  .row-actions { flex-wrap: wrap; justify-content: flex-start; }
+  .toolbar select { flex: 1 1 100%; }
+}

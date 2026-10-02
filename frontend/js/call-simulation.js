@@ -5,6 +5,7 @@
 
 const RISK_TARGET = 87; // risk score เป้าหมายเมื่อวิเคราะห์เสร็จ (ตรงกับ mock ฝั่ง backend)
 const RISK_THRESHOLD = 80; // เกินค่านี้ถือว่าความเสี่ยงสูง
+const DEMO_CALLER = "0641234521"; // เบอร์สมมติของสายจำลอง (แสดงเป็น 064-123-4521)
 
 // เก็บ reference ของ interval/timeout ทั้งหมด เพื่อเคลียร์ตอนกด Reset
 const activeTimers = {
@@ -113,14 +114,26 @@ function animateRiskScore() {
   }, 550);
 }
 
-/* วางสายทันที -> เก็บผลลง localStorage แล้วไปหน้าสรุปผล */
-function hangUpAndReport() {
+/* วางสายทันที -> บันทึกผลลง backend (call_logs) + localStorage แล้วไปหน้าสรุปผล */
+async function hangUpAndReport() {
   const callResult = {
-    phone: "064-XXX-XX21",
+    phone_number: DEMO_CALLER,
     risk_score: RISK_TARGET,
-    detected_at: new Date().toLocaleString("th-TH"),
+    detected_at: new Date().toISOString(),
   };
   localStorage.setItem("vg_last_call", JSON.stringify(callResult));
+  try {
+    // POST /api/calls ไม่บังคับ login (ถ้า login อยู่จะผูกกับผู้ใช้ให้อัตโนมัติ)
+    await apiPost("/calls", {
+      phone_number: DEMO_CALLER,
+      risk_score: RISK_TARGET,
+      is_synthetic_voice: true,
+      source: "demo",
+    }, { redirectOn401: false });
+  } catch (e) {
+    // บันทึกไม่สำเร็จ (เช่น backend ปิด) ก็ยังไปหน้าสรุปผลได้ เพื่อไม่ให้ demo สะดุด
+    console.warn("save call log failed:", e.message);
+  }
   window.location.href = "report-summary.html";
 }
 
@@ -131,7 +144,7 @@ async function viewDetail() {
 
   let breakdown;
   try {
-    const data = await apiGet("/calls/demo-analysis");
+    const data = await apiGet("/calls/demo-analysis", { auth: false });
     breakdown = data.breakdown;
   } catch (e) {
     // fallback หาก backend ไม่ตอบ ยังคง demo ต่อได้
@@ -145,7 +158,7 @@ async function viewDetail() {
 
   el.breakdownList.innerHTML = breakdown.map((item, i) => `
     <div class="breakdown-item">
-      <div class="label-row"><span>${item.label}</span><span>${item.value}%</span></div>
+      <div class="label-row"><span>${escapeHtml(item.label)}</span><span>${Number(item.value)}%</span></div>
       <div class="breakdown-bar-track">
         <div class="breakdown-bar-fill" id="bd-bar-${i}" style="width:0%;"></div>
       </div>

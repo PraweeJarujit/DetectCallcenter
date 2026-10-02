@@ -1,44 +1,50 @@
-version: '3.8'
+# DetectCallcenter / VoiceGuard AI — รันทั้งระบบด้วย: docker compose up -d --build
+#   frontend : http://localhost:3000      (Nginx เสิร์ฟหน้าเว็บ + proxy /api -> backend)
+#   backend  : http://localhost:8000/docs (Swagger UI)
+#   db       : localhost:5434             (ต่อด้วย DBeaver ได้ — ไม่ชนกับ indexing-lab ที่ใช้ 5432/5433)
+# ค่า user/password/secret อ่านจาก backend/.env (คัดลอกจาก backend/.env.example)
 
 services:
   db:
-    image: postgres:15
+    image: postgres:16
     container_name: detectcallcenter_db
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: callcenter_db
+    restart: unless-stopped
+    env_file: ./backend/.env
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5434:5432"   # bind เฉพาะเครื่องตัวเอง ไม่เปิด DB ให้ทั้ง network
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: detectcallcenter_backend
-    restart: always
+    restart: unless-stopped
+    env_file: ./backend/.env
     ports:
-      - "8001:8000"
-    environment:
-      - DATABASE_URL=postgresql://admin:password@db:5432/callcenter_db
+      - "8000:8000"
     depends_on:
-      - db
-    volumes:
-      - ./backend:/app
+      db:
+        condition: service_healthy   # รอ Postgres พร้อมจริงก่อนรัน migration
 
   frontend:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: detectcallcenter_frontend
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

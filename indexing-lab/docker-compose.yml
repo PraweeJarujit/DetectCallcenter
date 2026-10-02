@@ -1,0 +1,55 @@
+# Indexing Lab — 8903316 Web Application Development
+# PostgreSQL 2 ตัว ข้อมูลเหมือนกัน 1,000,000 rows ต่างกันแค่ index
+#   pg_with_index : port 5432  (มี index)
+#   pg_no_index   : port 5433  (ไม่มี index)
+#   adminer       : http://localhost:8080  (GUI ดูข้อมูล)
+
+x-pg-common: &pg-common
+  image: postgres:16
+  environment:
+    POSTGRES_DB: appdb
+    POSTGRES_USER: student
+    POSTGRES_PASSWORD: student
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U student -d appdb"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+  shm_size: 256mb
+
+services:
+  pg_with_index:
+    <<: *pg-common
+    container_name: pg_with_index
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_with_data:/var/lib/postgresql/data
+      - ./sql/init/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./sql/init/03-create-index.sql:/docker-entrypoint-initdb.d/03-create-index.sql:ro
+      - ./labs:/labs:ro
+
+  pg_no_index:
+    <<: *pg-common
+    container_name: pg_no_index
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_no_data:/var/lib/postgresql/data
+      - ./sql/init/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./labs:/labs:ro
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pg_with_index
+      - pg_no_index
+
+volumes:
+  pg_with_data:
+  pg_no_data:

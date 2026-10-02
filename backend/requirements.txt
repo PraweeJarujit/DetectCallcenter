@@ -5,8 +5,14 @@ psycopg2-binary==2.9.9
 alembic==1.13.1
 pydantic==2.7.1
 pydantic-settings==2.2.1
+# EmailStr ใน schema ต้องใช้ email-validator (เดิมไม่มี -> import schema ไม่ผ่าน)
+email-validator==2.1.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 ใช้กับ bcrypt >= 4.1 ไม่ได้ (hash รหัสผ่านแล้ว error) -> ล็อกเวอร์ชันไว้
+bcrypt==4.0.1
 python-multipart==0.0.9
 python-dotenv==1.0.1
 httpx==0.27.0
+# ฐานข้อมูล timezone (Asia/Bangkok) สำหรับ zoneinfo บน image slim
+tzdata==2024.1

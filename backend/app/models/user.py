@@ -1,13 +1,19 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, String
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Enum, String, Uuid
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+from app.models._common import utcnow
+
+if TYPE_CHECKING:
+    from app.models.call_log import CallLog
+    from app.models.emergency_contact import EmergencyContact
+    from app.models.report import Report
 
 
 class UserRole(str, enum.Enum):
@@ -17,18 +23,47 @@ class UserRole(str, enum.Enum):
     admin = "admin"        # ผู้ดูแลระบบ
 
 
+ROLE_LABELS = {
+    UserRole.gov: "หน่วยงานรัฐ",
+    UserRole.bank: "ธนาคาร",
+    UserRole.telco: "Telco",
+    UserRole.admin: "ผู้ดูแลระบบ",
+}
+
+
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    # unique=True สร้าง unique index ให้อยู่แล้ว -> ใช้กับ login / check-username (ค้นแบบ = ตรงตัว)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.gov, nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    # native_enum=False -> เก็บเป็น VARCHAR + CHECK constraint (migrate ง่ายกว่า ENUM type ของ Postgres)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, native_enum=False, length=10, validate_strings=True),
+        default=UserRole.gov, nullable=False,
     )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # การตั้งค่า "แจ้งเตือนผู้ติดต่อฉุกเฉินอัตโนมัติ" ในหน้า Settings
+    auto_notify: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now(), onupdate=utcnow, nullable=False
+    )
+
+    # ---------- Relationships (One-to-Many จากฝั่ง User) ----------
+    reports: Mapped[list["Report"]] = relationship(back_populates="reporter", passive_deletes=True)
+    call_logs: Mapped[list["CallLog"]] = relationship(back_populates="user", passive_deletes=True)
+    emergency_contacts: Mapped[list["EmergencyContact"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="EmergencyContact.created_at",
+    )
+
+    @property
+    def role_label(self) -> str:
+        return ROLE_LABELS.get(self.role, str(self.role))

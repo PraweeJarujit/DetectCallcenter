@@ -20,7 +20,7 @@
 
 <div class="container" style="max-width:640px;padding-bottom:60px;">
   <div class="card" style="text-align:center;">
-    <div class="badge badge-danger" style="margin-bottom:16px;">ผลการวิเคราะห์: เสี่ยงสูง</div>
+    <div class="badge badge-danger" style="margin-bottom:16px;" id="result-badge">ผลการวิเคราะห์: เสี่ยงสูง</div>
     <h1 style="font-size:22px;">สรุปผลการตรวจจับเสียงสังเคราะห์</h1>
 
     <div class="gauge-wrap">
@@ -44,6 +44,15 @@
       </div>
     </div>
 
+    <div style="text-align:left;margin-top:24px;">
+      <div class="card-title" style="font-size:15px;">รูปแบบการหลอกลวงที่พบ (เลือกได้หลายข้อ)</div>
+      <div class="chip-group" id="category-chips"><span style="color:var(--gray-soft);font-size:14px;">กำลังโหลด...</span></div>
+      <div class="form-group" style="margin-top:14px;">
+        <label for="report-note">รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+        <textarea id="report-note" rows="3" maxlength="1000" placeholder="เช่น อ้างเป็นเจ้าหน้าที่ตำรวจ ให้โอนเงินเพื่อตรวจสอบบัญชี"></textarea>
+      </div>
+    </div>
+
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:28px;">
       <button class="btn btn-primary btn-lg" id="submit-report-btn">🚨 แจ้งเบาะแสไปยังหน่วยงาน</button>
       <a href="dashboard.html" class="btn btn-ghost btn-lg">กลับสู่ Dashboard</a>
@@ -53,24 +62,29 @@
 
 <script src="../js/api.js"></script>
 <script>
-  // ดึงข้อมูลสายล่าสุดจาก localStorage (มาจากหน้า call-demo) ถ้าไม่มีใช้ mock เริ่มต้น
+  // ดึงข้อมูลสายล่าสุดจาก localStorage (มาจากหน้า call-demo) ถ้าไม่มีใช้ค่าตัวอย่าง
   function getCallData() {
     const raw = localStorage.getItem("vg_last_call");
     if (raw) {
-      try { return JSON.parse(raw); } catch (e) {}
+      try {
+        const d = JSON.parse(raw);
+        if (d && d.phone_number) return d;
+      } catch (e) {}
     }
-    return {
-      phone: "064-XXX-XX21",
-      risk_score: 87,
-      detected_at: new Date().toLocaleString("th-TH"),
-    };
+    return { phone_number: "0641234521", risk_score: 87, detected_at: new Date().toISOString() };
   }
 
   const callData = getCallData();
-  document.getElementById("report-phone").textContent = callData.phone;
-  document.getElementById("report-time").textContent = callData.detected_at;
-  document.getElementById("report-reason").textContent =
-    "ตรวจพบลักษณะเสียงสังเคราะห์ (voice cloning) ความน่าจะเป็นสูง ร่วมกับรูปแบบการหลอกลวงให้โอนเงินด่วน";
+  document.getElementById("report-phone").textContent = formatPhone(callData.phone_number);
+  document.getElementById("report-time").textContent = formatDateTime(callData.detected_at);
+  document.getElementById("report-reason").textContent = callData.risk_score >= 80
+    ? "ตรวจพบลักษณะเสียงสังเคราะห์ (voice cloning) ความน่าจะเป็นสูง ร่วมกับรูปแบบการหลอกลวงให้โอนเงินด่วน"
+    : "พบสัญญาณผิดปกติบางส่วน ควรระมัดระวังและตรวจสอบกับหน่วยงานโดยตรง";
+  if (callData.risk_score < 80) {
+    const badge = document.getElementById("result-badge");
+    badge.className = callData.risk_score >= 50 ? "badge badge-suspect" : "badge badge-safe";
+    badge.textContent = callData.risk_score >= 50 ? "ผลการวิเคราะห์: น่าสงสัย" : "ผลการวิเคราะห์: ปลอดภัย";
+  }
 
   /* วาด gauge แบบครึ่งวงกลมด้วย SVG arc พร้อม animate กวาดจาก 0 ไปยังค่าจริง */
   function drawGauge(score) {
@@ -116,19 +130,54 @@
     setTimeout(() => render(score), duration + 150);
   }
 
-  drawGauge(callData.risk_score);
+  drawGauge(Number(callData.risk_score) || 0);
 
-  document.getElementById("submit-report-btn").addEventListener("click", async () => {
+  /* โหลดประเภทการหลอกลวงจาก API (ตาราง scam_categories — Many-to-Many กับ reports) */
+  async function loadCategories() {
+    const box = document.getElementById("category-chips");
     try {
-      await apiPost("/calls/report", {
-        phone: callData.phone,
-        risk_score: callData.risk_score,
-        note: "แจ้งเบาะแสจากหน้า Report Summary (demo)",
-      });
-    } catch (e) {
-      // แม้ backend ไม่ตอบ ก็ยังแสดงผลว่าส่งสำเร็จ เพื่อไม่ให้ demo สะดุด
+      const cats = await apiGet("/categories", { auth: false });
+      box.innerHTML = cats.map((c) => `
+        <label class="chip"><input type="checkbox" value="${escapeHtml(c.code)}"
+          ${c.code === "voice_clone" && callData.risk_score >= 80 ? "checked" : ""}>
+          <span>${escapeHtml(c.name)}</span></label>`).join("");
+    } catch (err) {
+      box.innerHTML = `<span style="color:var(--coral-dark);font-size:14px;">⚠️ ${escapeHtml(errorMessage(err))}</span>`;
     }
-    showToast("✅ ส่งรายงานสำเร็จ");
+  }
+  loadCategories();
+
+  const submitBtn = document.getElementById("submit-report-btn");
+  submitBtn.addEventListener("click", async () => {
+    // การแจ้งเบาะแสต้องระบุตัวผู้แจ้ง (กันข้อมูลขยะ) -> ต้อง login
+    if (!getToken()) {
+      showToast("กรุณาเข้าสู่ระบบก่อนแจ้งเบาะแส");
+      setTimeout(() => (window.location.href = "login.html?next=report-summary.html"), 900);
+      return;
+    }
+    const category_codes = [...document.querySelectorAll("#category-chips input:checked")].map((i) => i.value);
+    const note = document.getElementById("report-note").value.trim() || null;
+
+    let sent = false;
+    await withLoading(submitBtn, async () => {
+      try {
+        const res = await apiPost("/report", {
+          phone_number: callData.phone_number,
+          risk_score: Number(callData.risk_score) || 0,
+          note,
+          category_codes,
+        });
+        showToast("✅ " + res.message, 3000, "success");
+        sent = true;
+      } catch (err) {
+        showError(err);
+      }
+    }, "กำลังส่งรายงาน...");
+    if (sent) {
+      // ส่งแล้วปิดปุ่ม กันแจ้งซ้ำ (report_count จะเพิ่มทุกครั้งที่ส่ง)
+      submitBtn.textContent = "✅ ส่งรายงานแล้ว";
+      submitBtn.disabled = true;
+    }
   });
 </script>
 </body>

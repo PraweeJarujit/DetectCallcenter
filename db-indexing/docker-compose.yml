@@ -1,0 +1,56 @@
+# DB Indexing Lab สำหรับ DetectCallcenter (VoiceGuard) — ใช้ schema จริงของโปรเจกต์
+# PostgreSQL 2 ตัว ข้อมูลเหมือนกันทุกแถว ต่างกันแค่ "index เพื่อ performance" (Alembic migration 0002)
+#   pg_app_with_index : port 5442  (มี IDX-2 ถึง IDX-9)
+#   pg_app_no_index   : port 5443  (มีแค่ PK / UNIQUE / FK)
+#   adminer           : http://localhost:8082
+# ใช้พอร์ตไม่ชนกับ indexing-lab (5432/5433/8080) และระบบหลัก (5434/8000/3000) — รันพร้อมกันได้
+
+x-pg-common: &pg-common
+  image: postgres:16
+  environment:
+    POSTGRES_DB: appdb
+    POSTGRES_USER: student
+    POSTGRES_PASSWORD: student
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U student -d appdb"]
+    interval: 5s
+    timeout: 5s
+    retries: 60
+  shm_size: 512mb
+
+services:
+  pg_app_with_index:
+    <<: *pg-common
+    container_name: pg_app_with_index
+    ports:
+      - "5442:5432"
+    volumes:
+      - app_with_data:/var/lib/postgresql/data
+      - ./sql/init/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./sql/init/03-create-index.sql:/docker-entrypoint-initdb.d/03-create-index.sql:ro
+      - ./labs:/labs:ro
+
+  pg_app_no_index:
+    <<: *pg-common
+    container_name: pg_app_no_index
+    ports:
+      - "5443:5432"
+    volumes:
+      - app_no_data:/var/lib/postgresql/data
+      - ./sql/init/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./labs:/labs:ro
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer_app
+    ports:
+      - "8082:8080"
+    depends_on:
+      - pg_app_with_index
+      - pg_app_no_index
+
+volumes:
+  app_with_data:
+  app_no_data:
