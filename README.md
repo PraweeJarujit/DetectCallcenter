@@ -26,7 +26,7 @@
 | Week 11-12 · Final project (live + docs) | 30% | **20%** | 🟡 เกือบเสร็จ | ยังไม่ได้ deploy ขึ้น cloud จริง (มี `render.yaml` พร้อมแล้ว) · ยังไม่ได้ทดสอบ `docker compose up --build` บนเครื่องทีม |
 | **รวม** | **100%** | **90%** | | |
 
-งานนอก roadmap: ✅ DB Indexing (ทำครบ + วัดผลแล้ว ดู [`db-indexing/`](db-indexing/README.md)) · ⏳ เชื่อมโมเดล AI วิเคราะห์เสียงจริง (`voiceguard-ai`) — ตอนนี้ `/detect/audio` ยังคืนผลจำลอง
+งานนอก roadmap: ✅ DB Indexing (ทำครบ + วัดผลแล้ว ดู [`db-indexing/`](db-indexing/README.md)) · ✅ Storytelling Dashboard สำหรับพันธมิตร ดู [`dashboard/`](dashboard/README.md) · ⏳ เชื่อมโมเดล AI วิเคราะห์เสียงจริง (`voiceguard-ai`) — ตอนนี้ `/detect/audio` ยังคืนผลจำลอง
 
 ### ✅ / ⏳ Checklist ตาม Roadmap
 
