@@ -41,7 +41,7 @@ services:
       # ให้หน้าเว็บเรียก /api/... ได้เหมือนตอนรันด้วย nginx (same-origin)
       - type: rewrite
         source: /api/*
-        destination: https://voiceguard-api.onrender.com/api/*
+        destination: https://voiceguard-api-dz1i.onrender.com/api/*
       - type: redirect
         source: /
         destination: /pages/login.html
