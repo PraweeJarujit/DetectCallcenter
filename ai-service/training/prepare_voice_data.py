@@ -186,6 +186,7 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
             import soundfile as sf
             import torch
             from transformers import AutoTokenizer, VitsModel
+            torch.set_num_threads(2)  # runner มี 4 core — กันไม่ให้แย่ง CPU จนเครื่องค้าง
             tok = AutoTokenizer.from_pretrained("facebook/mms-tts-tha")
             model = VitsModel.from_pretrained("facebook/mms-tts-tha").eval()
             for i, sid in mms_jobs:
@@ -197,6 +198,8 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
                     model.speaking_rate = rng.uniform(0.9, 1.15)
                     wav = model(**inputs).waveform[0].numpy()
                 sf.write(dst, wav, model.config.sampling_rate)
+                if i % 50 == 0:
+                    print(f"MMS {i}/{len(plan)}", flush=True)
         except Exception as e:  # noqa: BLE001
             print(f"MMS-TTS unavailable: {e}")
 

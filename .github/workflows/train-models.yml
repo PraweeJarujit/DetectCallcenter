@@ -15,9 +15,9 @@ on:
         description: "จำนวนเสียงสังเคราะห์ภาษาไทยที่จะสร้าง"
         default: "1500"
       with_mms:
-        description: "สร้างเสียงปลอมด้วย MMS-TTS (ต้องติดตั้ง torch)"
+        description: "เพิ่มเสียงปลอมจาก MMS-TTS (ใช้ torch บน CPU ช้าและกินแรม · ใบอนุญาต CC-BY-NC)"
         type: boolean
-        default: true
+        default: false
   push:
     branches-ignore: [main]
     paths:
@@ -41,8 +41,8 @@ jobs:
     env:
       ITW_PER_CLASS: ${{ inputs.itw_per_class || '4000' }}
       THAI_FAKE: ${{ inputs.thai_fake || '1500' }}
-      # push ไม่มี inputs (null == false เป็นจริงใน expression) จึงเช็ก event ก่อน
-      WITH_MMS: ${{ github.event_name == 'workflow_dispatch' && inputs.with_mms == false && 'false' || 'true' }}
+      # MMS เปิดเฉพาะตอนกดรันเองแล้วเลือก with_mms (push ไม่มี inputs)
+      WITH_MMS: ${{ github.event_name == 'workflow_dispatch' && inputs.with_mms && 'true' || 'false' }}
       PYTHONUNBUFFERED: "1"   # ให้ log ขึ้นทันทีระหว่างรัน
       HF_HUB_DISABLE_PROGRESS_BARS: "1"
     defaults:
