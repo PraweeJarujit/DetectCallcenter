@@ -1,6 +1,7 @@
 # DetectCallcenter / VoiceGuard AI — รันทั้งระบบด้วย: docker compose up -d --build
 #   frontend : http://localhost:3000      (Nginx เสิร์ฟหน้าเว็บ + proxy /api -> backend)
 #   backend  : http://localhost:8000/docs (Swagger UI)
+#   ai       : http://localhost:9000/health (โมเดลตรวจเสียง AI + ข้อความหลอกลวง)
 #   db       : localhost:5434             (ต่อด้วย DBeaver ได้ — ไม่ชนกับ indexing-lab ที่ใช้ 5432/5433)
 # ค่า user/password/secret อ่านจาก backend/.env (คัดลอกจาก backend/.env.example)
 
@@ -20,6 +21,15 @@ services:
       timeout: 5s
       retries: 20
 
+  voiceguard-ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: detectcallcenter_ai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"   # backend เรียกผ่านชื่อ service ภายใน network เปิดออกมาแค่ไว้ดู /health
+
   backend:
     build:
       context: ./backend
@@ -27,11 +37,16 @@ services:
     container_name: detectcallcenter_backend
     restart: unless-stopped
     env_file: ./backend/.env
+    environment:
+      VOICEGUARD_AI_URL: http://voiceguard-ai:9000
+      AI_MOCK_FALLBACK: "false"      # AI ล่ม = ตอบ 503 ตามจริง ไม่แต่งผล
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy   # รอ Postgres พร้อมจริงก่อนรัน migration
+      voiceguard-ai:
+        condition: service_healthy
 
   frontend:
     image: nginx:1.27-alpine
