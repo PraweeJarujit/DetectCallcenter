@@ -1,30 +1,36 @@
 """
 Router: Detect Callcenter System
-/detect/number, /detect/audio, /report, /reports/me, /categories, /blacklist (CRUD)
+/detect/number, /detect/audio, /detect/text, /report, /reports/me, /categories, /blacklist (CRUD)
 
-หมายเหตุ: /detect/audio เป็น "จุดเชื่อมต่อ" (integration point) ที่เตรียมไว้ให้ forward
-ไฟล์เสียงไปยังบริการ/โมเดล AI จริงในโฟลเดอร์ voiceguard-ai (ตั้งค่า URL ผ่าน
-VOICEGUARD_AI_URL ใน .env) ถ้ายังไม่ได้ deploy บริการนั้น endpoint จะ fallback เป็น
-ผลจำลอง (mock) เพื่อไม่ให้ frontend ที่เรียกใช้งาน endpoint นี้พัง
+สิทธิ์การใช้งาน
+  - /detect/number : ฟรี 5 ครั้ง/วัน (ไม่ login นับตาม IP, login นับตามบัญชี) / Premium ไม่จำกัด
+  - /detect/audio, /detect/text : เฉพาะ Premium — ส่งต่อให้โมเดลจริงใน ai-service (app/services/ai_client.py)
 """
 import logging
 
-import httpx
-from fastapi import APIRouter, Depends, Query, UploadFile, status
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.config import settings
-from app.core.exceptions import BadRequestError, ConflictError, NotFoundError, PayloadTooLargeError
+from app.core.exceptions import (
+    BadRequestError,
+    ConflictError,
+    NotFoundError,
+    PayloadTooLargeError,
+    QuotaExceededError,
+)
+from app.core.rate_limit import SlidingWindowLimiter
 from app.core.validators import validate_phone_prefix, validate_thai_phone
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_optional, require_admin
-from app.models.blacklist_number import BlacklistNumber, NumberStatus, status_from_score
+from app.dependencies import get_current_user, get_current_user_optional, require_admin, require_premium
+from app.models.blacklist_number import HIGH_RISK_THRESHOLD, BlacklistNumber, NumberStatus, status_from_score
 from app.models.call_log import CallLog, CallSource
 from app.models.report import Report
 from app.models.scam_category import ScamCategory
 from app.models.user import User
+from app.routers.calls import local_midnight_utc, local_today
 from app.schemas.detect import (
     AudioAnalysisResponse,
     BlacklistCreate,
@@ -39,16 +45,24 @@ from app.schemas.detect import (
     ReportOut,
     ReportRequest,
     ReportResponse,
+    TextAnalysisResponse,
+    TextCheckRequest,
 )
+from app.services import ai_client
 
 router = APIRouter(tags=["detect"])
 logger = logging.getLogger("app.detect")
 
 ALLOWED_AUDIO_TYPES = {
     "audio/wav", "audio/x-wav", "audio/wave", "audio/mpeg", "audio/mp3",
-    "audio/ogg", "audio/webm", "audio/mp4", "audio/x-m4a", "audio/aac", "application/octet-stream",
+    "audio/ogg", "audio/webm", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/m4a",
+    "video/mp4", "application/octet-stream",
 }
 REPORTS_IN_DETAIL = 50
+LEVEL_LABELS = {"high": "น่าจะเป็นมิจฉาชีพ", "medium": "น่าสงสัย ควรระวัง", "low": "ไม่พบสัญญาณอันตราย"}
+
+# ผู้ที่ไม่ได้ login: นับโควตาตรวจเบอร์ฟรีตาม IP (หน้าต่าง 24 ชม.)
+anonymous_quota = SlidingWindowLimiter(settings.FREE_DAILY_NUMBER_CHECKS, 24 * 3600)
 
 
 def _get_blacklist_by_phone(db: Session, phone: str) -> BlacklistNumber | None:
@@ -63,19 +77,62 @@ def _phone_from_path(phone: str) -> str:
         raise BadRequestError(str(e)) from None
 
 
+def _quota_message() -> str:
+    return (f"ตรวจเบอร์ฟรีครบ {settings.FREE_DAILY_NUMBER_CHECKS} ครั้งของวันนี้แล้ว "
+            f"สมัคร Premium {settings.PREMIUM_PRICE_BAHT} บาท/เดือน เพื่อตรวจได้ไม่จำกัด")
+
+
+def number_checks_today(db: Session, user: User) -> int:
+    # ใช้ IDX-8 (user_id, created_at DESC) -> นับเฉพาะแถวของผู้ใช้คนนี้ในวันนี้
+    return db.scalar(
+        select(func.count()).select_from(CallLog).where(
+            CallLog.user_id == user.id,
+            CallLog.created_at >= local_midnight_utc(local_today()),
+            CallLog.source == CallSource.number_check,
+        )
+    ) or 0
+
+
+def _alert_contacts(user: User, risk_score: int) -> list[str]:
+    """
+    แจ้งผู้ติดต่อฉุกเฉินเมื่อพบความเสี่ยงสูง (ถ้าผู้ใช้เปิด auto_notify)
+    ตอนนี้ยังไม่ได้ต่อผู้ให้บริการ SMS จริง -> บันทึก log และคืนรายชื่อที่ "จะ" ถูกแจ้ง
+    """
+    if risk_score < HIGH_RISK_THRESHOLD or not user.auto_notify:
+        return []
+    names = [c.name for c in user.emergency_contacts]
+    if names:
+        logger.info("alert (simulated SMS) user=%s contacts=%d score=%d", user.username, len(names), risk_score)
+    return names
+
+
 # ======================= Detect =======================
 
 @router.post("/detect/number", response_model=NumberCheckResponse)
 def detect_number(
     payload: NumberCheckRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
+    remaining: int | None = None
+    if current_user is None:
+        ip = (request.client.host if request.client else None) or "unknown"
+        if anonymous_quota.is_blocked(ip):
+            raise QuotaExceededError(_quota_message() + " (หรือสมัครสมาชิกฟรีเพื่อดูประวัติการตรวจ)")
+        anonymous_quota.hit(ip)
+        remaining = anonymous_quota.remaining(ip)
+    elif not current_user.is_premium:
+        used = number_checks_today(db, current_user)
+        if used >= settings.FREE_DAILY_NUMBER_CHECKS:
+            raise QuotaExceededError(_quota_message())
+        remaining = settings.FREE_DAILY_NUMBER_CHECKS - used - 1
+
     record = _get_blacklist_by_phone(db, payload.phone_number)
     if record is None:
         # ยังไม่เคยมีข้อมูล ถือว่าปลอดภัยจนกว่าจะมีการ report หรือระบบ AI วิเคราะห์เพิ่มเติม
         result = NumberCheckResponse(
-            phone_number=payload.phone_number, status=NumberStatus.safe, status_label="ปลอดภัย",
+            phone_number=payload.phone_number, status=NumberStatus.safe, status_label="ไม่พบในรายชื่อเบอร์อันตราย",
             risk_score=0, report_count=0, is_blacklisted=False,
         )
     else:
@@ -87,8 +144,9 @@ def detect_number(
             report_count=record.report_count,
             is_blacklisted=record.status in (NumberStatus.suspect, NumberStatus.high_risk),
         )
+    result.remaining_today = remaining
 
-    # บันทึกทุกการตรวจลง call_logs เพื่อใช้ทำสถิติบน dashboard
+    # บันทึกทุกการตรวจลง call_logs เพื่อใช้ทำสถิติ / ประวัติของผู้ใช้
     db.add(CallLog(
         phone_number=result.phone_number, user_id=current_user.id if current_user else None,
         risk_score=result.risk_score, status=result.status, source=CallSource.number_check,
@@ -100,12 +158,12 @@ def detect_number(
 @router.post("/detect/audio", response_model=AudioAnalysisResponse)
 async def detect_audio(
     file: UploadFile,
-    phone_number: str | None = Query(default=None, description="เบอร์ที่โทรเข้า (ถ้ามี) ใช้บันทึก call log"),
-    current_user: User = Depends(get_current_user),
+    phone_number: str | None = Query(default=None, description="เบอร์ที่โทรเข้า (ถ้ามี) ใช้บันทึกประวัติ"),
+    current_user: User = Depends(require_premium),
     db: Session = Depends(get_db),
 ):
     if file.content_type and file.content_type not in ALLOWED_AUDIO_TYPES:
-        raise BadRequestError(f"ไม่รองรับไฟล์ประเภท {file.content_type} (รองรับ wav, mp3, ogg, webm, m4a)")
+        raise BadRequestError(f"ไม่รองรับไฟล์ประเภท {file.content_type} (รองรับ wav, mp3, m4a, ogg, webm)")
     audio_bytes = await file.read(settings.MAX_AUDIO_BYTES + 1)
     if len(audio_bytes) > settings.MAX_AUDIO_BYTES:
         raise PayloadTooLargeError(f"ไฟล์เสียงต้องมีขนาดไม่เกิน {settings.MAX_AUDIO_BYTES // (1024 * 1024)} MB")
@@ -114,43 +172,46 @@ async def detect_audio(
     phone = _phone_from_path(phone_number) if phone_number else None
 
     filename = file.filename or "audio"
-    # พยายาม forward ไปยังบริการ AI จริงก่อน (โฟลเดอร์ voiceguard-ai)
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                f"{settings.VOICEGUARD_AI_URL}/analyze",
-                files={"file": (filename, audio_bytes, file.content_type)},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            result = AudioAnalysisResponse(
-                filename=filename,
-                risk_score=int(data.get("risk_score", 0)),
-                is_synthetic_voice=bool(data.get("is_synthetic_voice", False)),
-                detail=data.get("detail", {}),
-            )
-    except (httpx.HTTPError, ValueError, TypeError) as exc:
-        # บริการ AI จริงยังไม่พร้อมใช้งาน -> คืนผลจำลองเพื่อให้ flow การ integrate ฝั่ง frontend ทำต่อได้
-        logger.warning("voiceguard-ai unavailable (%s) -> returning mock result", type(exc).__name__)
-        result = AudioAnalysisResponse(
-            filename=filename,
-            risk_score=87,
-            is_synthetic_voice=True,
-            is_mock=True,
-            detail={
-                "note": "mock result: บริการ voiceguard-ai ยังไม่พร้อมใช้งาน",
-                "pitch_pattern_anomaly": 92,
-                "synthetic_artifact_detected": 85,
-            },
-        )
+    data = await ai_client.analyze_audio(audio_bytes, filename, file.content_type)
+    result = AudioAnalysisResponse(
+        filename=filename,
+        risk_score=max(0, min(100, int(data.get("risk_score", 0)))),
+        is_synthetic_voice=bool(data.get("is_synthetic_voice", False)),
+        is_mock=bool(data.get("is_mock", False)),
+        detail=data.get("detail", {}),
+    )
+    result.alerted_contacts = _alert_contacts(current_user, result.risk_score)
+    db.add(CallLog(
+        phone_number=phone, user_id=current_user.id, risk_score=result.risk_score,
+        status=status_from_score(result.risk_score), is_synthetic_voice=result.is_synthetic_voice,
+        source=CallSource.audio,
+    ))
+    db.commit()
+    return result
 
-    if phone:
-        db.add(CallLog(
-            phone_number=phone, user_id=current_user.id, risk_score=result.risk_score,
-            status=status_from_score(result.risk_score), is_synthetic_voice=result.is_synthetic_voice,
-            source=CallSource.audio,
-        ))
-        db.commit()
+
+@router.post("/detect/text", response_model=TextAnalysisResponse)
+async def detect_text(
+    payload: TextCheckRequest,
+    current_user: User = Depends(require_premium),
+    db: Session = Depends(get_db),
+):
+    data = await ai_client.analyze_text(payload.text)
+    level = data.get("level", "low")
+    result = TextAnalysisResponse(
+        risk_score=max(0, min(100, int(data.get("risk_score", 0)))),
+        scam_probability=float(data.get("scam_probability", 0.0)),
+        level=level,
+        level_label=LEVEL_LABELS.get(level, level),
+        signals=data.get("signals", []),
+        is_mock=bool(data.get("is_mock", False)),
+    )
+    result.alerted_contacts = _alert_contacts(current_user, result.risk_score)
+    db.add(CallLog(
+        phone_number=payload.phone_number, user_id=current_user.id, risk_score=result.risk_score,
+        status=status_from_score(result.risk_score), source=CallSource.text,
+    ))
+    db.commit()
     return result
 
 

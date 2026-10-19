@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, setup_logging
 from app.database import SessionLocal
-from app.routers import auth, calls, contacts, detect, users
+from app.routers import auth, billing, calls, contacts, detect, users
 
 setup_logging(settings.LOG_LEVEL)
 logger = logging.getLogger("app")
@@ -24,7 +24,7 @@ logger = logging.getLogger("app")
 # ตารางถูกสร้าง/อัปเดตด้วย Alembic migration (`alembic upgrade head`) ไม่ใช้ create_all ตอน startup แล้ว
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="1.1.0",
+    version="2.0.0",
     description="VoiceGuard AI — API ตรวจจับแก๊งคอลเซ็นเตอร์ (FastAPI + PostgreSQL)",
 )
 
@@ -48,6 +48,7 @@ app.include_router(users.router, prefix="/api")
 app.include_router(detect.router, prefix="/api")
 app.include_router(calls.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["health"])

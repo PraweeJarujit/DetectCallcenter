@@ -18,19 +18,47 @@ class NumberCheckResponse(BaseModel):
     risk_score: int
     report_count: int
     is_blacklisted: bool
+    # จำนวนครั้งที่ยังตรวจฟรีได้วันนี้ (None = Premium ไม่จำกัด)
+    remaining_today: int | None = None
 
 
 class AudioAnalysisResponse(BaseModel):
-    """
-    ผลตอบกลับจาก /detect/audio
-    หมายเหตุ: endpoint นี้เป็นจุดเชื่อมต่อ (integration point) ไปยังโมเดล/บริการจริง
-    ในโฟลเดอร์ voiceguard-ai — ปัจจุบัน forward ไฟล์ไปหรือ mock ผลถ้ายังเชื่อมต่อไม่ได้
-    """
+    """ผลจาก /detect/audio — คำนวณโดยโมเดลใน ai-service (ดู ai-service/models/voice_metrics.json)"""
     filename: str
     risk_score: int = Field(ge=0, le=100)
     is_synthetic_voice: bool
     is_mock: bool = False
     detail: dict
+    alerted_contacts: list[str] = Field(default_factory=list)
+
+
+class TextCheckRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=5000, examples=["บัญชีของคุณถูกระงับ กรุณายืนยันตัวตนที่ลิงก์นี้"])
+    phone_number: ThaiPhone | None = None
+
+    @field_validator("text")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("กรุณาใส่ข้อความที่ต้องการตรวจ")
+        return v
+
+
+class TextSignal(BaseModel):
+    code: str
+    label: str
+    match: str
+
+
+class TextAnalysisResponse(BaseModel):
+    risk_score: int = Field(ge=0, le=100)
+    scam_probability: float
+    level: str
+    level_label: str
+    signals: list[TextSignal]
+    is_mock: bool = False
+    alerted_contacts: list[str] = Field(default_factory=list)
 
 
 # ---------- Category (Many-to-Many กับ Report) ----------

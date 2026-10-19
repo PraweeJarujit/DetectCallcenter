@@ -30,6 +30,10 @@ class SlidingWindowLimiter:
             now = time.monotonic()
             self._prune(key, now).append(now)
 
+    def remaining(self, key: str) -> int:
+        with self._lock:
+            return max(0, self.max_attempts - len(self._prune(key, time.monotonic())))
+
     def reset(self, key: str | None = None) -> None:
         with self._lock:
             if key is None:

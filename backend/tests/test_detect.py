@@ -15,8 +15,8 @@ def test_detect_unknown_number_is_safe_and_logged(client, db):
     r = client.post("/api/detect/number", json={"phone_number": "081-111-2222"})
     assert r.status_code == 200
     data = r.json()
-    assert data == {"phone_number": "0811112222", "status": "safe", "status_label": "ปลอดภัย",
-                    "risk_score": 0, "report_count": 0, "is_blacklisted": False}
+    assert data == {"phone_number": "0811112222", "status": "safe", "status_label": "ไม่พบในรายชื่อเบอร์อันตราย",
+                    "risk_score": 0, "report_count": 0, "is_blacklisted": False, "remaining_today": 4}
     log = db.scalar(select(CallLog))
     assert log.phone_number == "0811112222" and log.source.value == "number_check" and log.user_id is None
 
@@ -139,28 +139,50 @@ def test_blacklist_admin_crud(client, db, user_headers, admin_headers):
     assert client.delete("/api/blacklist/0861234567", headers=admin_headers).status_code == 404
 
 
-def test_detect_audio_falls_back_to_mock(client, db, user_headers):
+def test_detect_audio_requires_premium(client, user_headers):
     files = {"file": ("call.wav", b"RIFF....WAVEfmt ", "audio/wav")}
-    r = client.post("/api/detect/audio?phone_number=0812345678", headers=user_headers, files=files)
-    assert r.status_code == 200
-    data = r.json()
-    assert data["is_mock"] is True and data["risk_score"] == 87
+    r = client.post("/api/detect/audio", headers=user_headers, files=files)
+    assert r.status_code == 402 and r.json()["error"]["code"] == "PREMIUM_REQUIRED"
+
+
+def test_detect_audio_ai_down_returns_503(client, db, premium_headers):
+    files = {"file": ("call.wav", b"RIFF....WAVEfmt ", "audio/wav")}
+    r = client.post("/api/detect/audio?phone_number=0812345678", headers=premium_headers, files=files)
+    assert r.status_code == 503 and r.json()["error"]["code"] == "AI_UNAVAILABLE"
+    assert db.scalar(select(func.count()).select_from(CallLog)) == 0
+
+
+def test_detect_audio_mock_fallback_when_enabled(client, db, premium_headers, monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "AI_MOCK_FALLBACK", True)
+    files = {"file": ("call.wav", b"RIFF....WAVEfmt ", "audio/wav")}
+    r = client.post("/api/detect/audio?phone_number=0812345678", headers=premium_headers, files=files)
+    assert r.status_code == 200 and r.json()["is_mock"] is True
     log = db.scalar(select(CallLog))
     assert log.source.value == "audio" and log.status.value == "high_risk"
 
 
-def test_detect_audio_uses_ai_service(client, user_headers, monkeypatch):
+def test_detect_audio_uses_ai_service(client, premium_headers, monkeypatch):
     async def fake_post(self, url, files):
         return httpx.Response(200, json={"risk_score": 12, "is_synthetic_voice": False, "detail": {"ok": 1}},
                               request=httpx.Request("POST", url))
     monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
-    r = client.post("/api/detect/audio", headers=user_headers,
+    r = client.post("/api/detect/audio", headers=premium_headers,
                     files={"file": ("a.mp3", b"ID3data", "audio/mpeg")})
     assert r.status_code == 200
     assert r.json()["risk_score"] == 12 and r.json()["is_mock"] is False
 
 
-def test_detect_audio_rejects_bad_input(client, user_headers, monkeypatch):
+def test_detect_audio_bad_audio_is_400(client, premium_headers, monkeypatch):
+    async def fake_post(self, url, files):
+        return httpx.Response(422, json={"detail": "เสียงสั้นเกินไป"}, request=httpx.Request("POST", url))
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    r = client.post("/api/detect/audio", headers=premium_headers, files={"file": ("a.wav", b"RIFF", "audio/wav")})
+    assert r.status_code == 400 and "สั้น" in r.json()["error"]["message"]
+
+
+def test_detect_audio_rejects_bad_input(client, premium_headers, monkeypatch):
+    user_headers = premium_headers
     r = client.post("/api/detect/audio", headers=user_headers, files={"file": ("x.txt", b"hello", "text/plain")})
     assert r.status_code == 400
     r = client.post("/api/detect/audio", headers=user_headers, files={"file": ("x.wav", b"", "audio/wav")})

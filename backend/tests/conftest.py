@@ -7,13 +7,14 @@ Fixtures กลางของชุดทดสอบ
 """
 import os
 import tempfile
+from datetime import datetime, timedelta, timezone
 
 # ต้องตั้ง env ก่อน import app (settings / engine ถูกสร้างตอน import)
 _tmpdir = tempfile.mkdtemp(prefix="dcc-test-")
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", f"sqlite:///{_tmpdir}/test.db")
 os.environ["ENVIRONMENT"] = "test"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-pytest-only-0123456789"
-os.environ["VOICEGUARD_AI_URL"] = "http://127.0.0.1:9"  # พอร์ตที่ไม่มีใครฟัง -> fallback mock ทันที
+os.environ["VOICEGUARD_AI_URL"] = "http://127.0.0.1:9"  # พอร์ตที่ไม่มีใครฟัง -> ต่อไม่ติดทันที (503)
 os.environ["LOGIN_MAX_ATTEMPTS"] = "3"
 os.environ["LOG_LEVEL"] = "WARNING"
 
@@ -27,6 +28,8 @@ from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 from app.models.user import UserRole  # noqa: E402
 from app.routers.auth import login_limiter  # noqa: E402
+from app.routers.billing import contact_limiter  # noqa: E402
+from app.routers.detect import anonymous_quota  # noqa: E402
 from app.seed import seed_categories  # noqa: E402
 
 PASSWORD = "Passw0rd123"
@@ -49,6 +52,8 @@ def _clean_db():
     with SessionLocal() as db:
         seed_categories(db)
     login_limiter.reset()
+    anonymous_quota.reset()
+    contact_limiter.reset()
     yield
 
 
@@ -69,13 +74,15 @@ def client():
 
 @pytest.fixture
 def make_user(db):
-    def _make(username="officer", role=UserRole.gov, password=PASSWORD, is_active=True, email=None):
+    def _make(username="officer", role=UserRole.member, password=PASSWORD, is_active=True, email=None,
+              premium=False):
         user = User(
             username=username,
             email=email or f"{username}@example.com",
             hashed_password=hash_password(password),
             role=role,
             is_active=is_active,
+            premium_until=datetime.now(timezone.utc) + timedelta(days=30) if premium else None,
         )
         db.add(user)
         db.commit()
@@ -127,3 +134,13 @@ def count_queries():
     event.listen(engine, "before_cursor_execute", counter)
     yield counter
     event.remove(engine, "before_cursor_execute", counter)
+
+
+@pytest.fixture
+def premium_user(make_user):
+    return make_user("premium.user", premium=True)
+
+
+@pytest.fixture
+def premium_headers(premium_user):
+    return auth_header(premium_user)

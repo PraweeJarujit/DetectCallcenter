@@ -18,6 +18,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # PostgreSQL จริง (ตัวเดียวกับ production) สำหรับตรวจ migration และรัน test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dcc
+          POSTGRES_PASSWORD: dcc
+          POSTGRES_DB: dcc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dcc" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dcc:dcc@localhost:5432/dcc
+      JWT_SECRET_KEY: ci-only-secret-key-not-used-anywhere-else-123
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,8 +41,17 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-      - name: Test (pytest + coverage >= 70%)
+      - name: Migrations apply cleanly and match the models
+        run: |
+          alembic upgrade head
+          alembic check
+          python -m app.seed
+      - name: Create test database
+        run: PGPASSWORD=dcc psql -h localhost -U dcc -d dcc -c "CREATE DATABASE dcc_test"
+      - name: Test on PostgreSQL (pytest + coverage >= 70%)
         run: pytest
+        env:
+          TEST_DATABASE_URL: postgresql://dcc:dcc@localhost:5432/dcc_test
 
   ai-service:
     runs-on: ubuntu-latest
