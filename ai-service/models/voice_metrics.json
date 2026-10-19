@@ -1,81 +1,81 @@
 {
-  "model_version": "voice-v1",
+  "model_version": "voice-v2",
   "algorithm": "hgb",
   "candidates_test_auc": {
-    "logreg": 0.9952,
-    "hgb": 0.9987
+    "logreg": 0.9972,
+    "hgb": 0.9988
   },
-  "trained_at": "2026-10-19T17:54:39Z",
-  "n_features": 231,
+  "trained_at": "2026-10-19T21:46:57Z",
+  "n_features": 228,
   "clips": {
     "itw": {
       "real": 4000,
       "fake": 4000
     },
     "thai": {
-      "real": 1460,
-      "fake": 1030
+      "real": 4062,
+      "fake": 1734
     }
   },
   "fake_engines": {
     "deepfake": 4000,
-    "edge": 532,
-    "fleurs": 1460,
-    "gtts": 498,
+    "edge": 901,
+    "fleurs": 4062,
+    "gtts": 833,
     "real": 4000
   },
-  "split": "In-the-Wild แยกตามผู้พูด / ไทยแยกตามประโยค, test 20%",
+  "split": "In-the-Wild แยกตามผู้พูด (test 20%) / ไทยใช้ FLEURS split test (ผู้พูดและประโยคที่ไม่เคยเห็น)",
   "test": {
     "overall_clean": {
-      "n": 1709,
-      "accuracy": 0.986,
-      "roc_auc": 0.9987,
+      "n": 2525,
+      "accuracy": 0.9853,
+      "roc_auc": 0.9988,
       "eer": 0.0129,
-      "real_correct_rate": 0.9831,
-      "fake_caught_rate": 0.9883
+      "real_correct_rate": 0.9826,
+      "fake_caught_rate": 0.9893
     },
     "overall_phone_channel": {
-      "n": 1709,
-      "accuracy": 0.9737,
-      "roc_auc": 0.9965,
-      "eer": 0.0268,
-      "real_correct_rate": 0.9583,
-      "fake_caught_rate": 0.9862
+      "n": 2525,
+      "accuracy": 0.935,
+      "roc_auc": 0.9887,
+      "eer": 0.0645,
+      "real_correct_rate": 0.9666,
+      "fake_caught_rate": 0.8891
     },
     "by_source": {
       "itw": {
         "clean": {
           "n": 1204,
-          "accuracy": 0.9801,
-          "roc_auc": 0.9973,
-          "eer": 0.0184,
-          "real_correct_rate": 0.9727,
+          "accuracy": 0.9701,
+          "roc_auc": 0.9961,
+          "eer": 0.0208,
+          "real_correct_rate": 0.9475,
           "fake_caught_rate": 0.9849
         },
         "phone_channel": {
           "n": 1204,
-          "accuracy": 0.9659,
-          "roc_auc": 0.9935,
-          "eer": 0.0357,
-          "real_correct_rate": 0.9412,
-          "fake_caught_rate": 0.9821
+          "accuracy": 0.8713,
+          "roc_auc": 0.9623,
+          "eer": 0.1109,
+          "real_correct_rate": 0.9139,
+          "fake_caught_rate": 0.8434
         }
       },
       "thai": {
         "clean": {
-          "n": 505,
-          "accuracy": 1.0,
+          "n": 1321,
+          "accuracy": 0.9992,
           "roc_auc": 1.0,
           "eer": 0.0,
-          "real_correct_rate": 1.0,
+          "real_correct_rate": 0.999,
           "fake_caught_rate": 1.0
         },
         "phone_channel": {
-          "n": 505,
-          "accuracy": 0.9921,
-          "roc_auc": 1.0,
-          "eer": 0.0,
-          "real_correct_rate": 0.9863,
+          "n": 1321,
+          "accuracy": 0.9932,
+          "roc_auc": 0.9998,
+          "eer": 0.0005,
+          "real_correct_rate": 0.9912,
           "fake_caught_rate": 1.0
         }
       }
@@ -86,5 +86,5 @@
       "gtts": 1.0
     }
   },
-  "feature_seconds": 621.4
+  "feature_seconds": 1346.4
 }
