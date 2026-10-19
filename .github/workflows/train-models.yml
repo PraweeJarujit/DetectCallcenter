@@ -22,6 +22,7 @@ on:
     branches-ignore: [main]
     paths:
       - "ai-service/training/**"
+      - "!ai-service/training/make_demo_calls.py"   # สร้างเสียงเดโม ไม่เกี่ยวกับการเทรน
       - "ai-service/app/features.py"
       - "ai-service/app/audio.py"
       - "ai-service/app/text_signals.py"
