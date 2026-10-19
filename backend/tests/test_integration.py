@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 from app.models import BlacklistNumber, CallLog, Report, ScamCategory, User
 from app.seed import main as seed_main
-from app.seed import seed_categories, seed_demo
+from app.seed import ensure_demo_accounts, seed_categories, seed_demo
 
 
 def test_full_user_journey(client):
@@ -115,3 +115,19 @@ def test_seed_demo_is_idempotent(db, monkeypatch):
     from app.core.config import settings
     monkeypatch.setattr(settings, "SEED_DEMO_DATA", False)
     seed_main()  # ไม่ error และไม่สร้างข้อมูลเพิ่ม
+
+
+def test_demo_accounts_added_to_existing_database(db):
+    """ฐานข้อมูลเดิมที่มีผู้ใช้แล้ว (อัปเกรดจากเวอร์ชันก่อน) ต้องได้บัญชีทดลองครบ โดยไม่แตะบัญชีเดิม"""
+    from app.core.security import hash_password
+    from app.models.user import UserRole
+
+    db.add(User(username="officer.demo", email="demo@example.com", hashed_password=hash_password("x1234567"),
+                role=UserRole.member))
+    db.commit()
+    assert seed_demo(db) is False
+    assert ensure_demo_accounts(db) == ["admin", "demo", "free.demo"]
+    demo = db.scalar(select(User).where(User.username == "demo"))
+    assert demo.is_premium and demo.email == "demo.demo@example.com"
+    assert ensure_demo_accounts(db) == []  # รันซ้ำไม่สร้างซ้ำ
+    assert db.scalar(select(func.count()).select_from(User)) == 4
