@@ -59,5 +59,9 @@ def find_signals(text: str) -> list[dict]:
     for code, label, pattern in SIGNALS:
         m = pattern.search(norm) or pattern.search(text or "")
         if m:
-            found.append({"code": code, "label": label, "match": m.group(0).strip()[:40]})
+            match = m.group(0).strip()
+            if match == "<url>":  # แสดงลิงก์จริงจากข้อความเดิม ไม่ใช่ token ที่ normalize แล้ว
+                url = _URL.search(text or "")
+                match = url.group(0) if url else "ลิงก์"
+            found.append({"code": code, "label": label, "match": match[:60]})
     return found
