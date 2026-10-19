@@ -3,7 +3,7 @@ from tests.conftest import PASSWORD, auth_header
 
 
 def _register(client, **over):
-    body = {"username": "new.user", "email": "new@example.com", "password": "Strong123", "role": "bank"}
+    body = {"username": "new.user", "email": "new@example.com", "password": "Strong123"}
     body.update(over)
     return client.post("/api/register", json=body)
 
@@ -13,7 +13,8 @@ def test_register_success(client):
     assert r.status_code == 201
     data = r.json()
     assert data["username"] == "new.user"
-    assert data["role"] == "bank" and data["role_label"] == "ธนาคาร"
+    assert data["role"] == "member" and data["role_label"] == "สมาชิก"
+    assert data["plan"] == "free" and data["is_premium"] is False
     assert data["full_name"] == "สมชาย"
     assert "hashed_password" not in data
 

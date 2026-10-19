@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<title>แอดมิน | VoiceGuard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header id="shell"></header>
+<main class="page">
+  <div class="container stack" style="--gap:24px">
+    <div class="page-head" style="margin-bottom:0">
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">แอดมิน</h1>
+      <p class="muted">ภาพรวมสมาชิก ข้อความจากหน้าติดต่อเรา และจัดการรายชื่อเบอร์อันตราย</p>
+    </div>
+
+    <dl class="stats" id="overview">
+      <div class="stat"><dt>สมาชิก</dt><dd data-k="members">–</dd></div>
+      <div class="stat"><dt>Premium</dt><dd data-k="premium_members">–</dd></div>
+      <div class="stat"><dt>รายได้เดือนนี้ (บาท)</dt><dd data-k="revenue_this_month_baht">–</dd></div>
+      <div class="stat"><dt>ตรวจวันนี้ทั้งระบบ</dt><dd data-k="checks_today">–</dd></div>
+      <div class="stat"><dt>เบอร์ในรายชื่อ</dt><dd data-k="blacklist_numbers">–</dd></div>
+      <div class="stat"><dt>ข้อความใหม่</dt><dd data-k="new_contact_messages">–</dd></div>
+    </dl>
+
+    <section class="panel">
+      <div class="panel-head"><h2>ข้อความจากผู้ใช้</h2>
+        <div class="chips" role="group" aria-label="กรองข้อความ">
+          <button class="chip" data-inbox="new" aria-pressed="true">ยังไม่ตอบ</button>
+          <button class="chip" data-inbox="handled" aria-pressed="false">ตอบแล้ว</button>
+        </div>
+      </div>
+      <ul class="list" id="inbox"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>รายชื่อเบอร์อันตราย</h2></div>
+      <form class="row" id="bl-form" novalidate>
+        <div class="grow"><label for="bl-phone">เบอร์</label><input class="input num" id="bl-phone" inputmode="tel" placeholder="08x-xxx-xxxx"></div>
+        <div style="flex:0 0 140px"><label for="bl-score">คะแนนความเสี่ยง</label><input class="input num" id="bl-score" type="number" min="0" max="100" value="90"></div>
+        <button class="btn btn-ink" type="submit" id="bl-submit">เพิ่มเบอร์</button>
+      </form>
+      <div class="toolbar" style="margin-top:20px">
+        <input class="input num grow" id="bl-q" inputmode="tel" placeholder="ค้นหาเบอร์ที่ขึ้นต้นด้วย">
+      </div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>เบอร์</th><th>สถานะ</th><th>คะแนน</th><th>ถูกแจ้ง</th><th></th></tr></thead>
+        <tbody id="bl-rows"></tbody>
+      </table></div>
+      <div class="pager" id="bl-pager"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>สมาชิกล่าสุด</h2></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>ชื่อผู้ใช้</th><th>อีเมล</th><th>แพ็กเกจ</th><th>สมัครเมื่อ</th></tr></thead>
+        <tbody id="users"></tbody>
+      </table></div>
+    </section>
+  </div>
+</main>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+const me = requireLogin();
+if (me && me.role !== "admin") window.location.href = "check.html";
+if (me && me.role === "admin") {
+  mountShell("admin");
+  const TOPICS = { general: "สอบถามทั่วไป", billing: "สมาชิก/ชำระเงิน", report: "แจ้งเบอร์/เว็บ", bug: "แจ้งปัญหา", partnership: "ความร่วมมือ" };
+
+  async function loadOverview() {
+    const o = await apiGet("/admin/overview");
+    document.querySelectorAll("#overview [data-k]").forEach((el) => (el.textContent = Number(o[el.dataset.k]).toLocaleString("th-TH")));
+  }
+
+  let inboxStatus = "new";
+  async function loadInbox() {
+    const data = await apiGet(`/admin/contact-messages?status=${inboxStatus}`);
+    document.getElementById("inbox").innerHTML = data.items.length ? data.items.map((m) => `
+      <li style="align-items:flex-start">
+        <span class="kind">${icon("inbox")}</span>
+        <div class="grow">
+          <div class="title">${escapeHtml(m.name)} <span class="sub">&lt;${escapeHtml(m.email)}&gt;</span></div>
+          <div class="sub">${TOPICS[m.topic] || escapeHtml(m.topic)} · ${timeAgo(m.created_at)}</div>
+          <p style="margin-top:6px;white-space:pre-wrap">${escapeHtml(m.message)}</p>
+        </div>
+        <div class="row" style="flex-wrap:nowrap">
+          <a class="btn btn-ghost btn-sm" href="mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent("ตอบกลับจาก VoiceGuard")}">ตอบอีเมล</a>
+          <button class="btn btn-sm ${m.status === "new" ? "btn-primary" : "btn-ghost"}" data-mark="${m.id}" data-to="${m.status === "new" ? "handled" : "new"}">
+            ${m.status === "new" ? "ทำเครื่องหมายว่าตอบแล้ว" : "ย้ายกลับไปยังไม่ตอบ"}</button>
+        </div>
+      </li>`).join("") : `<li style="display:block">${emptyState("inbox", inboxStatus === "new" ? "ไม่มีข้อความค้างตอบ" : "ยังไม่มีข้อความที่ตอบแล้ว")}</li>`;
+  }
+  document.querySelectorAll("[data-inbox]").forEach((b) => b.addEventListener("click", () => {
+    inboxStatus = b.dataset.inbox;
+    document.querySelectorAll("[data-inbox]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    loadInbox().catch(showError);
+  }));
+  document.getElementById("inbox").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-mark]");
+    if (!b) return;
+    try { await apiPut(`/admin/contact-messages/${b.dataset.mark}`, { status: b.dataset.to }); loadInbox(); loadOverview(); }
+    catch (err) { showError(err); }
+  });
+
+  let page = 1, q = "", timer;
+  async function loadBlacklist() {
+    const params = new URLSearchParams({ page, page_size: 15 });
+    if (q) params.set("q", q);
+    const data = await apiGet(`/blacklist?${params}`);
+    document.getElementById("bl-rows").innerHTML = data.items.map((n) => `
+      <tr>
+        <td class="num">${escapeHtml(formatPhone(n.phone_number))}</td>
+        <td>${pill(n.status, n.status_label)}</td>
+        <td><input class="input num" type="number" min="0" max="100" value="${n.risk_score}" data-score="${escapeHtml(n.phone_number)}" style="width:90px;min-height:36px;padding:4px 8px" aria-label="คะแนนของ ${escapeHtml(n.phone_number)}"></td>
+        <td class="num">${n.report_count}</td>
+        <td><button class="btn btn-danger btn-sm" data-del="${escapeHtml(n.phone_number)}" aria-label="ลบ ${escapeHtml(n.phone_number)}">${icon("trash")}</button></td>
+      </tr>`).join("") || `<tr><td colspan="5">${emptyState("search", "ไม่พบเบอร์")}</td></tr>`;
+    const pages = Math.max(1, Math.ceil(data.total / data.page_size));
+    document.getElementById("bl-pager").innerHTML = pages > 1 ? `<button class="btn btn-ghost btn-sm" data-page="${page - 1}" ${page <= 1 ? "disabled" : ""}>ก่อนหน้า</button>
+      <span class="num">หน้า ${page} / ${pages}</span><button class="btn btn-ghost btn-sm" data-page="${page + 1}" ${page >= pages ? "disabled" : ""}>ถัดไป</button>` : "";
+  }
+  document.getElementById("bl-pager").addEventListener("click", (e) => { const b = e.target.closest("[data-page]"); if (b) { page = +b.dataset.page; loadBlacklist().catch(showError); } });
+  document.getElementById("bl-q").addEventListener("input", (e) => { clearTimeout(timer); timer = setTimeout(() => { q = e.target.value.replace(/[\s-]/g, ""); page = 1; loadBlacklist().catch(showError); }, 300); });
+  document.getElementById("bl-rows").addEventListener("change", async (e) => {
+    const inp = e.target.closest("[data-score]");
+    if (!inp) return;
+    try { await apiPut(`/blacklist/${inp.dataset.score}`, { risk_score: Number(inp.value) }); showToast("บันทึกคะแนนแล้ว", 2000, "success"); loadBlacklist(); }
+    catch (err) { showError(err); }
+  });
+  document.getElementById("bl-rows").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-del]");
+    if (!b || !confirm(`ลบ ${formatPhone(b.dataset.del)} และรายงานทั้งหมดของเบอร์นี้?`)) return;
+    try { await apiDelete(`/blacklist/${b.dataset.del}`); showToast("ลบแล้ว", 2000, "success"); loadBlacklist(); loadOverview(); }
+    catch (err) { showError(err); }
+  });
+  document.getElementById("bl-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById("bl-phone").value.replace(/[\s-]/g, "");
+    try {
+      await withLoading(e.submitter, () => apiPost("/blacklist", { phone_number: phone, risk_score: Number(document.getElementById("bl-score").value) }));
+      showToast(`เพิ่ม ${formatPhone(phone)} แล้ว`, 2400, "success");
+      e.target.reset(); loadBlacklist(); loadOverview();
+    } catch (err) { showError(err); }
+  });
+
+  async function loadUsers() {
+    const data = await apiGet("/users?page_size=20");
+    document.getElementById("users").innerHTML = data.items.map((u) => `
+      <tr><td>${escapeHtml(u.username)}</td><td>${escapeHtml(u.email)}</td>
+      <td>${u.role === "admin" ? '<span class="pill pill-plain">ผู้ดูแล</span>' : u.is_premium ? '<span class="pill pill-safe">Premium</span>' : '<span class="pill pill-plain">ฟรี</span>'}</td>
+      <td>${formatDateTime(u.created_at)}</td></tr>`).join("");
+  }
+
+  Promise.all([loadOverview(), loadInbox(), loadBlacklist(), loadUsers()]).catch(showError);
+}
+</script>
+</body>
+</html>

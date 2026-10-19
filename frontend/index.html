@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceGuard — ตรวจเบอร์ ข้อความ และเสียงมิจฉาชีพ</title>
+<meta name="description" content="ตรวจเบอร์โทร ข้อความ SMS/LINE และไฟล์เสียงก่อนเชื่อ ด้วยฐานข้อมูลเบอร์มิจฉาชีพและ AI ตรวจเสียงสังเคราะห์ ใช้ฟรี หรือ Premium 59 บาท/เดือน">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html" id="brand"></a>
+    <nav class="nav hide-mobile" aria-label="หน้าแรก">
+      <a href="#how">ตรวจอะไรได้บ้าง</a>
+      <a href="#pricing">ราคา</a>
+      <a href="#contact">ติดต่อเรา</a>
+    </nav>
+    <div class="topbar-end" id="auth-links">
+      <a class="btn btn-ghost btn-sm" href="pages/login.html">เข้าสู่ระบบ</a>
+      <a class="btn btn-primary btn-sm" href="pages/login.html?mode=register">สมัครฟรี</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <h1>ได้รับสายหรือข้อความแปลก ๆ ตรวจก่อนเชื่อ</h1>
+        <p class="hero-lede">ใส่เบอร์ วางข้อความ หรืออัปโหลดเสียงที่สงสัย แล้วรู้ผลภายในไม่กี่วินาทีว่าอันตรายแค่ไหน และควรทำอะไรต่อ</p>
+      </div>
+      <div class="hero-extra">
+        <ul class="hero-points" id="hero-points"></ul>
+        <div class="hotline">
+          <span class="muted small">โดนหลอกโอนเงินไปแล้ว<br>โทรอายัดบัญชีได้ 24 ชั่วโมง</span>
+          <a href="tel:1441"><strong>1441</strong></a>
+        </div>
+      </div>
+      <div id="checker" class="hero-checker"></div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="container">
+      <div class="section-head">
+        <h2>ตรวจได้ 3 แบบ</h2>
+        <p>มิจฉาชีพมาได้หลายทาง เราจึงตรวจได้ทั้งเบอร์ที่โทรมา ข้อความที่ส่งมา และเสียงที่อาจถูกสร้างด้วย AI</p>
+      </div>
+      <div class="how" id="how-items"></div>
+    </div>
+  </section>
+
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head">
+        <h2>ราคา</h2>
+        <p>เริ่มใช้ฟรีได้ทันที อยากให้ AI ช่วยตรวจข้อความและเสียง สมัคร Premium เดือนละ 59 บาท ยกเลิกได้ทุกเมื่อ</p>
+      </div>
+      <div class="pricing" id="plans"></div>
+      <p class="metrics-note" id="metrics-note"></p>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head"><h2>คำถามที่พบบ่อย</h2></div>
+      <div class="faq">
+        <details>
+          <summary>ผลว่า “ไม่พบประวัติ” แปลว่าเบอร์นี้ปลอดภัยหรือไม่</summary>
+          <p>ไม่เสมอไป แปลว่ายังไม่มีผู้ใช้แจ้งเบอร์นี้เข้ามา มิจฉาชีพเปลี่ยนเบอร์บ่อย ถ้าปลายสายขอให้โอนเงิน ขอ OTP หรืออ้างว่าเป็นตำรวจหรือธนาคาร ให้วางสายแล้วโทรกลับเบอร์ทางการเอง</p>
+        </details>
+        <details>
+          <summary>AI ตรวจเสียงทำงานอย่างไร</summary>
+          <p>โมเดลฟังลักษณะเสียง เช่น ย่านความถี่สูงและจังหวะของเสียง ซึ่งเสียงที่สร้างด้วย AI มักทิ้งร่องรอยไว้ เราเทรนด้วยเสียงจริงเทียบกับเสียงปลอมทั้งภาษาอังกฤษและภาษาไทย และเผยผลทดสอบจริงไว้ด้านบน ผลนี้ช่วยประกอบการตัดสินใจ ไม่ใช่คำตัดสินเด็ดขาด</p>
+        </details>
+        <details>
+          <summary>เก็บไฟล์เสียงหรือข้อความของฉันไว้ไหม</summary>
+          <p>ไม่เก็บ ไฟล์เสียงและข้อความถูกวิเคราะห์แล้วทิ้งทันที เราบันทึกเฉพาะผลตรวจ (คะแนนและเวลา) ไว้ในประวัติของคุณ</p>
+        </details>
+        <details>
+          <summary>ยกเลิก Premium ได้ไหม</summary>
+          <p>ได้ทุกเมื่อจากหน้าบัญชี ยกเลิกแล้วยังใช้ Premium ได้จนครบรอบที่จ่ายไว้</p>
+        </details>
+        <details>
+          <summary>ตอนนี้ชำระเงินได้จริงหรือยัง</summary>
+          <p>ยังเป็นโหมดทดลอง ระบบจะจำลองการชำระเงินโดยไม่ตัดเงินจริง เพื่อให้ทดลองใช้ฟีเจอร์ Premium ได้ครบ</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="container contact-grid">
+      <div class="section-head">
+        <h2>ติดต่อเรา</h2>
+        <p>สอบถามเรื่องสมาชิก แจ้งปัญหาการใช้งาน หรือส่งเบอร์มิจฉาชีพจำนวนมาก ทีมงานตอบกลับทางอีเมลภายใน 1-2 วันทำการ</p>
+      </div>
+      <form class="panel" id="contact-form" novalidate>
+        <div class="row">
+          <div class="grow"><label for="c-name">ชื่อ</label><input class="input" id="c-name" maxlength="100" autocomplete="name" required></div>
+          <div class="grow"><label for="c-email">อีเมล</label><input class="input" id="c-email" type="email" autocomplete="email" required></div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label for="c-topic">เรื่อง</label>
+          <select class="select" id="c-topic">
+            <option value="general">สอบถามทั่วไป</option>
+            <option value="billing">สมาชิกและการชำระเงิน</option>
+            <option value="report">แจ้งเบอร์หรือเว็บมิจฉาชีพ</option>
+            <option value="bug">แจ้งปัญหาการใช้งาน</option>
+            <option value="partnership">ความร่วมมือ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="c-message">ข้อความ</label>
+          <textarea class="textarea" id="c-message" maxlength="3000" required></textarea>
+        </div>
+        <div class="form-error" id="c-error" role="alert" hidden></div>
+        <button class="btn btn-primary" type="submit" style="margin-top:16px">ส่งข้อความ</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <span>© 2026 VoiceGuard</span>
+    <span>สายด่วนแจ้งเหตุออนไลน์ <a href="tel:1441">1441</a> · ตำรวจไซเบอร์ <a href="https://thaipoliceonline.go.th" rel="noopener">thaipoliceonline.go.th</a></span>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/checker.js"></script>
+<script>
+document.getElementById("brand").innerHTML = brandMark() + "<span>VoiceGuard</span>";
+
+const user = getCurrentUser();
+if (user && getToken()) {
+  document.getElementById("auth-links").innerHTML =
+    `<a class="btn btn-primary btn-sm" href="pages/check.html">เข้าใช้งาน</a>`;
+}
+
+document.getElementById("hero-points").innerHTML = [
+  "ตรวจเบอร์กับรายชื่อเบอร์ที่ผู้ใช้แจ้งว่าเป็นมิจฉาชีพ ฟรี ไม่ต้องสมัคร",
+  "AI อ่านข้อความ SMS / LINE แล้วชี้จุดที่เข้าข่ายหลอกลวง",
+  "AI ฟังเสียงว่าเป็นเสียงคนจริง หรือเสียงที่สร้างขึ้นเลียนแบบ",
+].map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
+
+document.getElementById("how-items").innerHTML = [
+  ["phone", "เบอร์โทร", "ใส่เบอร์ที่โทรหรือส่งข้อความมา ระบบเทียบกับเบอร์ที่ถูกแจ้ง บอกจำนวนครั้งที่ถูกแจ้งและระดับความเสี่ยง ใช้ฟรีวันละ 5 ครั้ง"],
+  ["message", "ข้อความ SMS / LINE", "วางข้อความที่ได้รับ AI บอกว่าเข้าข่ายหลอกลวงแค่ไหน และชี้ว่าตรงไหนน่าสงสัย เช่น อ้างเป็นเจ้าหน้าที่ เร่งให้โอนเงิน หรือมีลิงก์ปลอม"],
+  ["mic", "เสียงในสาย", "อัปโหลดไฟล์เสียงหรืออัดเสียงจากลำโพงระหว่างคุย AI ตรวจว่าเป็นเสียงสังเคราะห์ที่มิจฉาชีพใช้เลียนเสียงคนรู้จักหรือไม่"],
+].map(([ic, h, p]) => `<div>${icon(ic, "icon icon-lg")}<h3>${h}</h3><p class="muted">${p}</p></div>`).join("");
+
+mountChecker(document.getElementById("checker"));
+
+apiGet("/billing/plans", { auth: false }).then((plans) => {
+  const signedIn = user && getToken();
+  document.getElementById("plans").innerHTML = plans.map((p) => {
+    const featured = p.code === "premium";
+    const href = featured
+      ? (signedIn ? "pages/account.html#upgrade" : "pages/login.html?mode=register&next=account.html%23upgrade")
+      : (signedIn ? "pages/check.html" : "pages/login.html?mode=register");
+    return `<div class="plan ${featured ? "featured" : ""}">
+      <h3>${escapeHtml(p.name)}</h3>
+      <div class="price num">${p.price_baht ? p.price_baht : "0"} <span class="per">บาท ${escapeHtml(p.period)}</span></div>
+      <ul>${p.features.map((f) => `<li>${icon("check")}<span>${escapeHtml(f)}</span></li>`).join("")}</ul>
+      <a class="btn ${featured ? "btn-primary" : "btn-ghost"} btn-block" href="${href}">${featured ? "สมัคร Premium" : "เริ่มใช้ฟรี"}</a>
+    </div>`;
+  }).join("");
+}).catch(() => {
+  document.getElementById("plans").innerHTML = `<div class="plan">ฟรี: ตรวจเบอร์วันละ 5 ครั้ง</div><div class="plan featured">Premium 59 บาท/เดือน: AI ตรวจข้อความและเสียง</div>`;
+});
+
+aiStatus().then((s) => {
+  if (!s.available || !s.voice_test) return;
+  const v = s.voice_test, t = s.text_test;
+  document.getElementById("metrics-note").textContent =
+    `ผลทดสอบล่าสุดกับข้อมูลที่โมเดลไม่เคยเห็น: ตรวจเสียงถูกต้อง ${pct(v.accuracy)} (จับเสียงปลอมได้ ${pct(v.fake_caught_rate)})` +
+    (t ? ` · ตรวจข้อความถูกต้อง ${pct(t.accuracy)}` : "");
+});
+
+document.getElementById("contact-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById("c-error");
+  errBox.hidden = true;
+  const body = {
+    name: document.getElementById("c-name").value.trim(),
+    email: document.getElementById("c-email").value.trim(),
+    topic: document.getElementById("c-topic").value,
+    message: document.getElementById("c-message").value.trim(),
+  };
+  if (!body.name || !body.email || body.message.length < 10) {
+    errBox.textContent = "กรอกชื่อ อีเมล และข้อความอย่างน้อย 10 ตัวอักษร";
+    errBox.hidden = false;
+    return;
+  }
+  try {
+    const r = await withLoading(e.submitter, () => apiPost("/contact", body, { auth: false }), "กำลังส่ง...");
+    e.target.reset();
+    showToast(r.message, 4200, "success");
+  } catch (ex) {
+    errBox.textContent = errorMessage(ex);
+    errBox.hidden = false;
+  }
+});
+</script>
+</body>
+</html>

@@ -72,6 +72,23 @@ class TooManyRequestsError(AppError):
     code = "TOO_MANY_REQUESTS"
 
 
+class PremiumRequiredError(AppError):
+    """ฟีเจอร์นี้สำหรับสมาชิก Premium (59 บาท/เดือน) — 402 Payment Required"""
+    status_code = status.HTTP_402_PAYMENT_REQUIRED
+    code = "PREMIUM_REQUIRED"
+
+
+class QuotaExceededError(AppError):
+    """ใช้สิทธิ์ฟรีครบโควตาของวันนี้แล้ว"""
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    code = "QUOTA_EXCEEDED"
+
+
+class ServiceUnavailableError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "AI_UNAVAILABLE"
+
+
 _HTTP_CODE_NAMES = {
     400: "BAD_REQUEST",
     401: "UNAUTHORIZED",

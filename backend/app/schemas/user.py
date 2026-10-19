@@ -15,18 +15,18 @@ class UserRegister(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN,
-                          examples=["officer.somchai"])
+                          examples=["somchai.k"])
     email: EmailStr
     password: StrongPassword = Field(min_length=8, max_length=72)  # bcrypt รับได้สูงสุด 72 bytes
     full_name: str | None = Field(default=None, max_length=150)
-    role: UserRole = UserRole.gov
+    # ทุกคนที่สมัครเองเป็น member เสมอ — ส่ง role อื่น (เช่น admin) มาจะถูกปฏิเสธ (กัน privilege escalation)
+    role: UserRole = UserRole.member
 
     @field_validator("role")
     @classmethod
     def _no_self_admin(cls, v: UserRole) -> UserRole:
-        # ห้ามสมัครเป็น admin เอง (privilege escalation) — admin ต้องถูกตั้งโดย admin คนอื่นหรือ seed
-        if v == UserRole.admin:
-            raise ValueError("ไม่สามารถสมัครด้วยสิทธิ์ admin ได้")
+        if v != UserRole.member:
+            raise ValueError("สมัครได้เฉพาะบัญชีสมาชิกทั่วไปเท่านั้น")
         return v
 
     @field_validator("full_name")
@@ -72,6 +72,10 @@ class UserOut(BaseModel):
     role_label: str
     is_active: bool
     auto_notify: bool
+    plan: str
+    is_premium: bool
+    premium_until: datetime | None
+    auto_renew: bool
     created_at: datetime
 
 

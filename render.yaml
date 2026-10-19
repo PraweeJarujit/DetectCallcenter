@@ -1,6 +1,6 @@
 # Render Blueprint — deploy ทั้งระบบขึ้น cloud ด้วยไฟล์เดียว (Week 11-12: Deployment)
 # วิธีใช้: push repo ขึ้น GitHub -> https://dashboard.render.com -> New -> Blueprint -> เลือก repo นี้
-# Render จะสร้าง PostgreSQL + backend (Docker) + frontend (static site) ให้อัตโนมัติ
+# Render จะสร้าง PostgreSQL + backend (Docker) + AI service (Docker) + frontend (static site) ให้อัตโนมัติ
 databases:
   - name: voiceguard-db
     plan: free
@@ -8,6 +8,14 @@ databases:
     user: dcc_user
 
 services:
+  - type: web
+    name: voiceguard-ai
+    runtime: docker
+    plan: free
+    rootDir: ai-service
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+
   - type: web
     name: voiceguard-api
     runtime: docker
@@ -30,6 +38,15 @@ services:
         value: "true"                # demo สำหรับนำเสนอ — ระบบจริงให้ตั้งเป็น false
       - key: WEB_CONCURRENCY
         value: "1"
+      # free plan รับ traffic ผ่าน private network ไม่ได้ จึงเรียก AI ทาง URL สาธารณะ — แก้ให้ตรงกับ URL จริงของ voiceguard-ai
+      - key: VOICEGUARD_AI_URL
+        value: https://voiceguard-ai.onrender.com
+      - key: AI_TIMEOUT_SECONDS
+        value: "60"                  # free instance หลับแล้วตื่นช้า ~50 วินาที
+      - key: AI_MOCK_FALLBACK
+        value: "false"
+      - key: PAYMENT_PROVIDER
+        value: mock                  # ยังไม่รับเงินจริง
 
   - type: web
     name: voiceguard-web
@@ -42,9 +59,6 @@ services:
       - type: rewrite
         source: /api/*
         destination: https://voiceguard-api-dz1i.onrender.com/api/*
-      - type: redirect
-        source: /
-        destination: /pages/login.html
     headers:
       - path: /*
         name: X-Frame-Options
@@ -52,6 +66,9 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
+      - path: /*
+        name: Permissions-Policy
+        value: "microphone=(self), camera=(), geolocation=()"
       - path: /*
         name: Content-Security-Policy
         value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"

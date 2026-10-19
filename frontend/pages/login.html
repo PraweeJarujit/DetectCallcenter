@@ -3,169 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เข้าสู่ระบบ | VoiceGuard AI</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<title>เข้าสู่ระบบ | VoiceGuard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-
-<div class="auth-wrap">
+<main class="auth">
   <div class="auth-card">
-    <div class="brand">
-      <span class="logo-mark" style="width:40px;height:40px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;">🛡️</span>
-      <strong>VoiceGuard AI</strong>
-    </div>
-    <h1 id="auth-title">เข้าสู่ระบบสำหรับหน่วยงาน</h1>
-    <p class="subtitle" id="auth-subtitle">เข้าสู่ระบบเพื่อดูแดชบอร์ดที่ปรับให้เหมาะกับหน่วยงานของคุณ</p>
+    <a class="brand" href="../index.html" id="brand"></a>
+    <h1 style="font-size:1.8rem" id="title">เข้าสู่ระบบ</h1>
+    <p class="muted" id="lede" style="margin-top:6px">ดูประวัติการตรวจ และใช้ AI ตรวจข้อความกับเสียงสำหรับสมาชิก Premium</p>
 
-    <!-- โหมดสมัครสมาชิก: เลือกประเภทหน่วยงาน (role) -->
-    <div class="role-tabs" id="role-tabs" hidden>
-      <div class="role-tab active" data-role="gov">หน่วยงานรัฐ</div>
-      <div class="role-tab" data-role="bank">ธนาคาร</div>
-      <div class="role-tab" data-role="telco">Telco</div>
+    <div class="segmented" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก">
+      <button type="button" role="tab" data-mode="login">เข้าสู่ระบบ</button>
+      <button type="button" role="tab" data-mode="register">สมัครสมาชิก</button>
     </div>
 
-    <form id="auth-form" novalidate>
-      <div class="form-group">
-        <label for="username">ชื่อผู้ใช้งาน</label>
-        <input type="text" id="username" placeholder="เช่น officer.somchai" value="officer.demo"
-               autocomplete="username" required minlength="3" maxlength="50" pattern="[A-Za-z0-9._\-]+">
+    <form class="panel" id="auth-form" novalidate>
+      <div class="field">
+        <label for="username">ชื่อผู้ใช้</label>
+        <input class="input" id="username" autocomplete="username" required minlength="3" maxlength="50" placeholder="เช่น somchai.k">
         <div class="field-error" data-for="username"></div>
       </div>
-      <div class="form-group register-only" hidden>
+      <div class="field register-only">
         <label for="email">อีเมล</label>
-        <input type="email" id="email" placeholder="name@agency.go.th" autocomplete="email">
+        <input class="input" type="email" id="email" autocomplete="email" placeholder="name@example.com">
         <div class="field-error" data-for="email"></div>
       </div>
-      <div class="form-group register-only" hidden>
-        <label for="full_name">ชื่อ-นามสกุล (ไม่บังคับ)</label>
-        <input type="text" id="full_name" maxlength="150" autocomplete="name">
+      <div class="field register-only">
+        <label for="full_name">ชื่อที่ให้แสดง (ไม่บังคับ)</label>
+        <input class="input" id="full_name" maxlength="150" autocomplete="name">
       </div>
-      <div class="form-group">
+      <div class="field">
         <label for="password">รหัสผ่าน</label>
-        <input type="password" id="password" placeholder="••••••••" value="demo1234"
-               autocomplete="current-password" required>
+        <input class="input" type="password" id="password" autocomplete="current-password" required>
         <div class="field-error" data-for="password"></div>
+        <p class="small muted register-only" style="margin-top:4px">อย่างน้อย 8 ตัว มีทั้งตัวอักษรและตัวเลข</p>
       </div>
-      <div class="form-error" id="form-error" role="alert" hidden></div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">เข้าสู่ระบบ</button>
+      <div class="form-error" id="form-error" role="alert" hidden style="margin-top:14px"></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="submit-btn" style="margin-top:18px">เข้าสู่ระบบ</button>
     </form>
 
-    <p class="form-hint">
-      <a href="#" id="mode-switch" style="color:var(--navy);font-weight:600;">ยังไม่มีบัญชี? สมัครสมาชิก</a><br>
-      บัญชีทดลอง: <code>officer.demo</code> / <code>demo1234</code> · admin: <code>admin</code> / <code>Admin1234</code><br>
-      หรือ <a href="call-demo.html" style="color:var(--navy);font-weight:600;">ทดลองใช้งาน Demo ทันที</a> โดยไม่ต้อง login
+    <p class="demo-accounts" id="demo-accounts">
+      บัญชีทดลอง:
+      <button type="button" data-demo="demo">demo (Premium)</button> ·
+      <button type="button" data-demo="free.demo">free.demo (ฟรี)</button> ·
+      <button type="button" data-demo="admin">admin</button>
     </p>
   </div>
-</div>
+</main>
 
 <script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
 <script>
-  let mode = "login"; // login | register
-  let selectedRole = "gov";
-  const $ = (id) => document.getElementById(id);
+document.getElementById("brand").innerHTML = brandMark() + "<span>VoiceGuard</span>";
+const params = new URLSearchParams(location.search);
+const next = params.get("next");
+let mode = params.get("mode") === "register" ? "register" : "login";
 
-  /* ไปหน้าที่ผู้ใช้ตั้งใจจะเข้าก่อนโดนเด้งมา login — รับเฉพาะชื่อไฟล์ในเว็บเรา (กัน open redirect) */
-  function nextPage() {
-    const next = new URLSearchParams(location.search).get("next") || "";
-    return /^[a-z-]+\.html(\?[\w=&%-]*)?$/.test(next) ? next : "dashboard.html";
-  }
+const form = document.getElementById("auth-form");
+const submitBtn = document.getElementById("submit-btn");
+const formError = document.getElementById("form-error");
 
-  // login อยู่แล้ว -> ไป dashboard เลย
-  if (getToken() && getCurrentUser()) window.location.replace(nextPage());
+function safeNext() {
+  // อนุญาตเฉพาะหน้าภายในโฟลเดอร์ pages (กัน open redirect ไปเว็บอื่น)
+  if (next && /^[a-z-]+\.html(#[a-z-]+)?$/.test(next)) return next;
+  return "check.html";
+}
 
-  document.querySelectorAll(".role-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".role-tab").forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      selectedRole = tab.dataset.role;
-    });
-  });
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
+  document.querySelectorAll(".register-only").forEach((el) => (el.hidden = m !== "register"));
+  document.getElementById("title").textContent = m === "register" ? "สมัครสมาชิกฟรี" : "เข้าสู่ระบบ";
+  document.getElementById("lede").textContent = m === "register"
+    ? "สมัครฟรี ตรวจเบอร์ได้วันละ 5 ครั้งและเก็บประวัติไว้ อัปเกรดเป็น Premium ได้ภายหลัง"
+    : "ดูประวัติการตรวจ และใช้ AI ตรวจข้อความกับเสียงสำหรับสมาชิก Premium";
+  document.getElementById("demo-accounts").hidden = m === "register";
+  submitBtn.textContent = m === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ";
+  document.getElementById("password").autocomplete = m === "register" ? "new-password" : "current-password";
+  clearErrors();
+}
 
-  function setMode(next) {
-    mode = next;
-    const reg = mode === "register";
-    $("role-tabs").hidden = !reg;
-    document.querySelectorAll(".register-only").forEach((el) => (el.hidden = !reg));
-    $("auth-title").textContent = reg ? "สมัครสมาชิกสำหรับหน่วยงาน" : "เข้าสู่ระบบสำหรับหน่วยงาน";
-    $("auth-subtitle").textContent = reg
-      ? "เลือกประเภทหน่วยงาน แล้วกรอกข้อมูลเพื่อสร้างบัญชี"
-      : "เข้าสู่ระบบเพื่อดูแดชบอร์ดที่ปรับให้เหมาะกับหน่วยงานของคุณ";
-    $("submit-btn").textContent = reg ? "สมัครสมาชิก" : "เข้าสู่ระบบ";
-    $("mode-switch").textContent = reg ? "มีบัญชีแล้ว? เข้าสู่ระบบ" : "ยังไม่มีบัญชี? สมัครสมาชิก";
-    $("password").autocomplete = reg ? "new-password" : "current-password";
-    if (reg) { $("username").value = ""; $("password").value = ""; }
-    clearErrors();
-  }
+function clearErrors() {
+  formError.hidden = true;
+  document.querySelectorAll(".field-error").forEach((el) => (el.textContent = ""));
+  document.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+}
 
-  $("mode-switch").addEventListener("click", (e) => {
-    e.preventDefault();
-    setMode(mode === "login" ? "register" : "login");
-  });
+function fieldError(field, message) {
+  const el = document.querySelector(`.field-error[data-for="${field}"]`);
+  const input = document.getElementById(field);
+  if (el) el.textContent = message;
+  if (input) input.classList.add("is-invalid");
+}
 
-  function clearErrors() {
-    document.querySelectorAll(".field-error").forEach((el) => (el.textContent = ""));
-    $("form-error").hidden = true;
-  }
+document.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+document.querySelectorAll("[data-demo]").forEach((b) => b.addEventListener("click", () => {
+  document.getElementById("username").value = b.dataset.demo;
+  document.getElementById("password").value = b.dataset.demo === "admin" ? "Admin1234" : "demo1234";
+  form.requestSubmit();
+}));
 
-  /* ตรวจฝั่ง client ก่อนส่ง (UX ดีขึ้น) — แต่ backend ยัง validate ซ้ำเสมอ */
-  function validateClient(body) {
-    const errors = {};
-    if (!/^[A-Za-z0-9._-]{3,50}$/.test(body.username)) errors.username = "ใช้ a-z, 0-9, . _ - ความยาว 3-50 ตัว";
-    if (mode === "register") {
-      if (!/^\S+@\S+\.\S+$/.test(body.email || "")) errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
-      if (body.password.length < 8 || !/[A-Za-z]/.test(body.password) || !/\d/.test(body.password))
-        errors.password = "อย่างน้อย 8 ตัว และมีทั้งตัวอักษรและตัวเลข";
-    } else if (!body.password) {
-      errors.password = "กรุณากรอกรหัสผ่าน";
-    }
-    return errors;
-  }
-
-  function showErrors(errors, general) {
-    Object.entries(errors).forEach(([field, msg]) => {
-      const el = document.querySelector(`.field-error[data-for="${field}"]`);
-      if (el) el.textContent = msg;
-    });
-    if (general) {
-      $("form-error").textContent = general;
-      $("form-error").hidden = false;
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearErrors();
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  let ok = true;
+  if (username.length < 3) { fieldError("username", "ชื่อผู้ใช้อย่างน้อย 3 ตัวอักษร"); ok = false; }
+  if (!password) { fieldError("password", "กรอกรหัสผ่าน"); ok = false; }
+  if (mode === "register") {
+    if (!/^[A-Za-z0-9._-]+$/.test(username)) { fieldError("username", "ใช้ได้เฉพาะ a-z, 0-9 และ . _ -"); ok = false; }
+    const email = document.getElementById("email").value.trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) { fieldError("email", "อีเมลไม่ถูกต้อง"); ok = false; }
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      fieldError("password", "รหัสผ่านอย่างน้อย 8 ตัว มีทั้งตัวอักษรและตัวเลข"); ok = false;
     }
   }
+  if (!ok) return;
 
-  $("auth-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    clearErrors();
-    const body = { username: $("username").value.trim(), password: $("password").value };
-    if (mode === "register") {
-      body.email = $("email").value.trim();
-      body.full_name = $("full_name").value.trim() || null;
-      body.role = selectedRole;
-    }
-    const errors = validateClient(body);
-    if (Object.keys(errors).length) return showErrors(errors);
-
-    await withLoading($("submit-btn"), async () => {
-      try {
-        if (mode === "register") {
-          await apiPost("/register", body, { auth: false });
-          showToast("✅ สมัครสมาชิกสำเร็จ กำลังเข้าสู่ระบบ...", 2000, "success");
-        }
-        const result = await apiPost("/login", { username: body.username, password: body.password }, { auth: false });
-        saveSession(result.access_token, result.user);
-        window.location.href = nextPage();
-      } catch (err) {
-        // 422: แสดง error ใต้ช่องที่ผิด, อื่นๆ แสดงรวมด้านบนปุ่ม
-        if (err.code === "VALIDATION_ERROR" && Array.isArray(err.details)) {
-          const fieldErrors = {};
-          err.details.forEach((d) => { if (d.field) fieldErrors[d.field] = d.message; });
-          showErrors(fieldErrors, Object.keys(fieldErrors).length ? null : err.message);
-        } else {
-          showErrors({}, errorMessage(err));
-        }
+  try {
+    await withLoading(submitBtn, async () => {
+      if (mode === "register") {
+        await apiPost("/register", {
+          username, password,
+          email: document.getElementById("email").value.trim(),
+          full_name: document.getElementById("full_name").value.trim() || null,
+        }, { auth: false });
       }
+      const res = await apiPost("/login", { username, password }, { auth: false });
+      saveSession(res.access_token, res.user);
     }, mode === "register" ? "กำลังสมัคร..." : "กำลังเข้าสู่ระบบ...");
-  });
+    window.location.href = safeNext();
+  } catch (err) {
+    if (err.code === "VALIDATION_ERROR" && Array.isArray(err.details)) {
+      err.details.forEach((d) => fieldError(d.field, d.message));
+    }
+    formError.textContent = errorMessage(err);
+    formError.hidden = false;
+  }
+});
+
+if (getToken() && getCurrentUser() && !params.get("mode")) window.location.href = safeNext();
+setMode(mode);
 </script>
 </body>
 </html>

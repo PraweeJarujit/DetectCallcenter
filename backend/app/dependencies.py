@@ -11,7 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import AuthenticationError, PermissionDeniedError
+from app.core.exceptions import AuthenticationError, PermissionDeniedError, PremiumRequiredError
 from app.core.security import decode_access_token
 from app.database import get_db
 from app.models.token_blacklist import TokenBlacklist
@@ -67,4 +67,11 @@ def get_current_user_optional(
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.admin:
         raise PermissionDeniedError("ต้องใช้สิทธิ์ผู้ดูแลระบบ (admin) เท่านั้น")
+    return current_user
+
+
+def require_premium(current_user: User = Depends(get_current_user)) -> User:
+    """ฟีเจอร์ AI (วิเคราะห์เสียง/ข้อความ) สำหรับสมาชิก Premium เท่านั้น — admin ใช้ได้เสมอ"""
+    if not current_user.is_premium:
+        raise PremiumRequiredError("ฟีเจอร์นี้สำหรับสมาชิก Premium (59 บาท/เดือน)")
     return current_user

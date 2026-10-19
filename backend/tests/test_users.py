@@ -42,9 +42,9 @@ def test_non_admin_cannot_change_role_or_others(client, user, admin, user_header
 
 def test_admin_updates_user(client, user, admin, admin_headers):
     r = client.put(f"/api/users/{user.id}", headers=admin_headers,
-                   json={"role": "telco", "is_active": False, "password": "Another123"})
+                   json={"role": "admin", "is_active": False, "password": "Another123"})
     assert r.status_code == 200
-    assert r.json()["role"] == "telco" and r.json()["is_active"] is False
+    assert r.json()["role"] == "admin" and r.json()["is_active"] is False
     r = client.put(f"/api/users/{admin.id}", headers=admin_headers, json={"is_active": False})
     assert r.status_code == 400
 

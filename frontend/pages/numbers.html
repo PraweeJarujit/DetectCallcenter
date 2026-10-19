@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<title>เบอร์อันตราย | VoiceGuard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header id="shell"></header>
+<main class="page">
+  <div class="container">
+    <div class="page-head">
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">เบอร์อันตราย</h1>
+      <p class="muted">รายชื่อเบอร์ที่ผู้ใช้แจ้งว่าเป็นมิจฉาชีพ ค้นหาได้ และช่วยแจ้งเบอร์ใหม่ให้คนอื่นรู้</p>
+    </div>
+    <div class="grid-2">
+      <section class="panel">
+        <div class="toolbar">
+          <div class="grow" style="position:relative">
+            <label for="q" class="sr-only">ค้นหาเบอร์</label>
+            <input class="input num" id="q" inputmode="tel" placeholder="ค้นหาเบอร์ เช่น 0812" maxlength="12">
+          </div>
+          <div class="chips" role="group" aria-label="กรองตามระดับ">
+            <button class="chip" data-status="" aria-pressed="true">ทั้งหมด</button>
+            <button class="chip" data-status="high_risk" aria-pressed="false">อันตราย</button>
+            <button class="chip" data-status="suspect" aria-pressed="false">น่าสงสัย</button>
+          </div>
+        </div>
+        <ul class="list" id="rows"></ul>
+        <div class="pager" id="pager"></div>
+      </section>
+
+      <section class="panel" id="report">
+        <div class="panel-head"><h2>แจ้งเบอร์มิจฉาชีพ</h2></div>
+        <form id="report-form" novalidate>
+          <div class="field">
+            <label for="r-phone">เบอร์ที่โทรหรือส่งข้อความมา</label>
+            <input class="input num" id="r-phone" inputmode="tel" placeholder="08x-xxx-xxxx" required>
+            <div class="field-error" data-for="r-phone"></div>
+          </div>
+          <div class="field">
+            <label>มาในรูปแบบไหน (เลือกได้หลายข้อ)</label>
+            <div class="chips" id="r-cats"></div>
+          </div>
+          <div class="field">
+            <label>มั่นใจแค่ไหน</label>
+            <div class="chips" role="radiogroup" id="r-score">
+              <button type="button" class="chip" data-score="92" aria-pressed="true">แน่ใจว่าหลอกลวง</button>
+              <button type="button" class="chip" data-score="65" aria-pressed="false">แค่สงสัย</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="r-note">เล่าสั้น ๆ ว่าเกิดอะไรขึ้น (ไม่บังคับ)</label>
+            <textarea class="textarea" id="r-note" maxlength="1000" style="min-height:96px" placeholder="เช่น อ้างเป็นตำรวจ บอกว่ามีพัสดุผิดกฎหมาย ให้โอนเงินตรวจสอบ"></textarea>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" style="margin-top:16px">แจ้งเบอร์นี้</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</main>
+
+<dialog id="detail"><div class="dialog-body" id="detail-body"></div></dialog>
+
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+if (requireLogin()) {
+  mountShell("numbers");
+  document.querySelector('#report-form button[type=submit]').innerHTML = `${icon("flag")}แจ้งเบอร์นี้`;
+  let page = 1, status = "", q = "", timer;
+  const rows = document.getElementById("rows");
+  const pager = document.getElementById("pager");
+
+  async function load() {
+    rows.innerHTML = `<li><div class="skeleton" style="width:100%"></div></li>`;
+    const params = new URLSearchParams({ page, page_size: 15 });
+    if (status) params.set("status", status);
+    if (q) params.set("q", q);
+    try {
+      const data = await apiGet(`/blacklist?${params}`);
+      rows.innerHTML = data.items.length ? data.items.map((n) => `
+        <li>
+          <span class="kind">${icon("phone")}</span>
+          <div class="grow"><div class="title num">${escapeHtml(formatPhone(n.phone_number))}</div>
+            <div class="sub">ถูกแจ้ง ${n.report_count} ครั้ง · ล่าสุด ${timeAgo(n.last_reported_at)}</div></div>
+          ${pill(n.status, n.status_label)}
+          <button class="btn btn-ghost btn-sm" data-detail="${escapeHtml(n.phone_number)}">ดูรายละเอียด</button>
+        </li>`).join("")
+        : `<li style="display:block">${emptyState("search", q ? "ไม่พบเบอร์นี้ในรายชื่อ ถ้าเบอร์นี้หลอกคุณ แจ้งได้ที่ฟอร์มด้านข้าง" : "ยังไม่มีเบอร์ในระดับนี้")}</li>`;
+      const pages = Math.max(1, Math.ceil(data.total / data.page_size));
+      pager.innerHTML = pages > 1 ? `<button class="btn btn-ghost btn-sm" data-page="${page - 1}" ${page <= 1 ? "disabled" : ""}>ก่อนหน้า</button>
+        <span class="num">หน้า ${page} / ${pages}</span>
+        <button class="btn btn-ghost btn-sm" data-page="${page + 1}" ${page >= pages ? "disabled" : ""}>ถัดไป</button>` : "";
+    } catch (e) {
+      rows.innerHTML = "";
+      showError(e);
+    }
+  }
+
+  document.getElementById("q").addEventListener("input", (e) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { q = e.target.value.replace(/[\s-]/g, ""); page = 1; load(); }, 300);
+  });
+  document.querySelectorAll("[data-status]").forEach((b) => b.addEventListener("click", () => {
+    status = b.dataset.status; page = 1;
+    document.querySelectorAll("[data-status]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    load();
+  }));
+  pager.addEventListener("click", (e) => { const b = e.target.closest("[data-page]"); if (b) { page = +b.dataset.page; load(); } });
+
+  const dlg = document.getElementById("detail");
+  rows.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-detail]");
+    if (!b) return;
+    try {
+      const d = await apiGet(`/blacklist/${encodeURIComponent(b.dataset.detail)}`);
+      document.getElementById("detail-body").innerHTML = `
+        <div class="panel-head"><h2 class="num">${escapeHtml(formatPhone(d.phone_number))}</h2>${pill(d.status, d.status_label)}</div>
+        <p class="muted">ถูกแจ้ง ${d.report_count} ครั้ง · คะแนนความเสี่ยง ${d.risk_score}/100 · แจ้งครั้งแรก ${formatDateTime(d.first_reported_at)}</p>
+        <ul class="list" style="margin-top:12px;max-height:50vh;overflow:auto">${d.reports.map((r) => `
+          <li style="display:block">
+            <div class="chips">${r.categories.map((c) => `<span class="pill pill-plain">${escapeHtml(c.name)}</span>`).join("")}</div>
+            ${r.note ? `<p style="margin-top:6px">${escapeHtml(r.note)}</p>` : ""}
+            <p class="sub" style="margin-top:4px">${timeAgo(r.created_at)}</p>
+          </li>`).join("") || `<li>${emptyState("info", "ยังไม่มีรายละเอียดการแจ้ง")}</li>`}</ul>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" data-close>ปิด</button>
+          <button class="btn btn-primary" data-prefill="${escapeHtml(d.phone_number)}">${icon("flag")}แจ้งเพิ่ม</button>
+        </div>`;
+      dlg.showModal();
+    } catch (err) { showError(err); }
+  });
+  dlg.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-prefill]");
+    if (b) { dlg.close(); prefill(b.dataset.prefill); }
+    if (e.target === dlg || e.target.closest("[data-close]")) dlg.close();
+  });
+
+  /* ---------- report form ---------- */
+  const selected = new Set();
+  let score = 92;
+  apiGet("/categories", { auth: false }).then((cats) => {
+    document.getElementById("r-cats").innerHTML = cats.map((c) =>
+      `<button type="button" class="chip" data-cat="${escapeHtml(c.code)}" aria-pressed="false">${escapeHtml(c.name)}</button>`).join("");
+  });
+  document.getElementById("r-cats").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-cat]");
+    if (!b) return;
+    const on = !selected.has(b.dataset.cat);
+    on ? selected.add(b.dataset.cat) : selected.delete(b.dataset.cat);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  document.getElementById("r-score").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-score]");
+    if (!b) return;
+    score = +b.dataset.score;
+    document.querySelectorAll("[data-score]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+  function prefill(phone) {
+    document.getElementById("r-phone").value = formatPhone(phone);
+    document.getElementById("report").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("r-note").focus();
+  }
+  document.getElementById("report-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("r-phone");
+    const err = document.querySelector('[data-for="r-phone"]');
+    err.textContent = ""; input.classList.remove("is-invalid");
+    const phone = input.value.replace(/[\s-]/g, "");
+    if (!/^0\d{8,9}$/.test(phone)) { err.textContent = "ใส่เบอร์โทรไทย 9-10 หลัก"; input.classList.add("is-invalid"); return; }
+    try {
+      const r = await withLoading(e.submitter, () => apiPost("/report", {
+        phone_number: phone, risk_score: score, category_codes: [...selected],
+        note: document.getElementById("r-note").value.trim() || null,
+      }), "กำลังแจ้ง...");
+      showToast(`แจ้งเบอร์ ${formatPhone(phone)} แล้ว ขอบคุณที่ช่วยเตือนคนอื่น`, 3600, "success");
+      e.target.reset(); selected.clear();
+      document.querySelectorAll("[data-cat]").forEach((x) => x.setAttribute("aria-pressed", "false"));
+      q = phone; document.getElementById("q").value = phone; page = 1; load();
+    } catch (ex) {
+      if (ex.status === 422) { err.textContent = ex.message; input.classList.add("is-invalid"); } else showError(ex);
+    }
+  });
+
+  const pre = new URLSearchParams(location.search).get("report");
+  if (pre) prefill(pre);
+  load();
+}
+</script>
+</body>
+</html>

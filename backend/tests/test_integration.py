@@ -13,7 +13,7 @@ from app.seed import seed_categories, seed_demo
 def test_full_user_journey(client):
     """สมัคร -> login -> ตรวจเบอร์ -> แจ้ง report -> ดู dashboard -> เพิ่มผู้ติดต่อ -> logout"""
     assert client.post("/api/register", json={"username": "jane", "email": "jane@example.com",
-                                              "password": "Jane12345", "role": "telco"}).status_code == 201
+                                              "password": "Jane12345"}).status_code == 201
     token = client.post("/api/login", json={"username": "jane", "password": "Jane12345"}).json()["access_token"]
     h = {"Authorization": f"Bearer {token}"}
 

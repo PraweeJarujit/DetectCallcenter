@@ -1,0 +1,10 @@
+# ใช้ตอนให้บริการ (serve) — เล็กพอสำหรับเซิร์ฟเวอร์ RAM 512 MB (ไม่มี torch)
+# เวอร์ชัน numpy/scikit-learn ต้องตรงกับตอนเทรน ไม่อย่างนั้นโหลดไฟล์ .joblib ไม่ได้
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.20
+numpy==2.1.3
+scipy==1.14.1
+scikit-learn==1.5.2
+joblib==1.4.2
+soundfile==0.12.1

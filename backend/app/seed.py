@@ -5,9 +5,9 @@
 
 - scam_categories : เติมให้ครบเสมอ (ปกติ migration 0001 ใส่ไว้แล้ว)
 - demo data       : เฉพาะเมื่อ SEED_DEMO_DATA=true (ค่าเริ่มต้น) — ปิดใน production!
-    admin        / Admin1234   (role admin)
-    officer.demo / demo1234    (role gov)
-    bank.demo    / demo1234    (role bank)
+    admin     / Admin1234   ผู้ดูแลระบบ
+    demo      / demo1234    สมาชิก Premium (มีอายุ 30 วันนับจากวันที่ seed)
+    free.demo / demo1234    สมาชิกฟรี
   + เบอร์ blacklist ตัวอย่าง, report, call log ย้อนหลัง 7 วัน ให้ dashboard มีข้อมูล
 """
 import logging
@@ -20,10 +20,11 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import hash_password
 from app.database import SessionLocal
-from app.models import BlacklistNumber, CallLog, EmergencyContact, Report, ScamCategory, User
+from app.models import BlacklistNumber, CallLog, EmergencyContact, Payment, Report, ScamCategory, User
 from app.models._common import utcnow
 from app.models.blacklist_number import status_from_score
 from app.models.call_log import CallSource
+from app.models.payment import PaymentStatus
 from app.models.scam_category import DEFAULT_CATEGORIES
 from app.models.user import UserRole
 
@@ -31,8 +32,8 @@ logger = logging.getLogger("app.seed")
 
 DEMO_USERS = [
     ("admin", "admin@example.com", "Admin1234", "ผู้ดูแลระบบ", UserRole.admin),
-    ("officer.demo", "officer@example.com", "demo1234", "เจ้าหน้าที่ทดสอบ", UserRole.gov),
-    ("bank.demo", "bank@example.com", "demo1234", "ธนาคารทดสอบ", UserRole.bank),
+    ("demo", "demo@example.com", "demo1234", "สมชาย ใจดี", UserRole.member),
+    ("free.demo", "free@example.com", "demo1234", "วิภา รักษ์ดี", UserRole.member),
 ]
 
 
@@ -59,9 +60,14 @@ def seed_demo(db: Session, rng: random.Random | None = None) -> bool:
         users.append(u)
     db.flush()
     officer = users[1]
+    officer.premium_until = utcnow() + timedelta(days=30)
+    officer.auto_renew = True
     db.add_all([
-        EmergencyContact(user_id=officer.id, name="คุณสมชาย (ลูกชาย)", phone_number="0815551234"),
-        EmergencyContact(user_id=officer.id, name="สถานีตำรวจไซเบอร์", phone_number="1441"),
+        EmergencyContact(user_id=officer.id, name="คุณแม่", phone_number="0815551234"),
+        EmergencyContact(user_id=officer.id, name="น้องสาว", phone_number="0897771234"),
+        Payment(user_id=officer.id, amount_baht=settings.PREMIUM_PRICE_BAHT, status=PaymentStatus.paid,
+                provider="mock", provider_ref="VGSEED0001", method="promptpay", period_start=utcnow(),
+                period_end=officer.premium_until, expires_at=utcnow(), paid_at=utcnow()),
     ])
 
     categories = db.scalars(select(ScamCategory)).all()
@@ -90,10 +96,13 @@ def seed_demo(db: Session, rng: random.Random | None = None) -> bool:
             score = rng.choices([rng.randint(0, 49), rng.randint(50, 79), rng.randint(80, 99)], [6, 2, 2])[0]
             phone = rng.choice(numbers).phone_number if score >= 50 and rng.random() < 0.5 \
                 else f"08{rng.randint(10_000_000, 99_999_999)}"
+            source = rng.choice([CallSource.number_check, CallSource.audio, CallSource.text])
             db.add(CallLog(
                 phone_number=phone, user_id=rng.choice([None, officer.id]), risk_score=score,
-                status=status_from_score(score), is_synthetic_voice=score >= 80 and rng.random() < 0.7,
-                source=rng.choice(list(CallSource)),
+                status=status_from_score(score),
+                # "เสียงสังเคราะห์" มีความหมายเฉพาะผลตรวจไฟล์เสียง
+                is_synthetic_voice=source == CallSource.audio and score >= 80 and rng.random() < 0.7,
+                source=source,
                 created_at=now - timedelta(days=day, minutes=rng.randint(0, 60 * 20)),
             ))
     db.commit()

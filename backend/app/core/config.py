@@ -35,7 +35,19 @@ class Settings(BaseSettings):
     LOGIN_WINDOW_SECONDS: int = 60
 
     VOICEGUARD_AI_URL: str = "http://voiceguard-ai:9000"
+    AI_TIMEOUT_SECONDS: float = 30.0
+    # true = ถ้าบริการ AI ล่ม ให้ตอบผลจำลอง (ใช้ตอนพัฒนาหน้าเว็บเท่านั้น) / false = ตอบ 503 ตามจริง
+    AI_MOCK_FALLBACK: bool = False
     MAX_AUDIO_BYTES: int = 10 * 1024 * 1024  # 10 MB
+
+    # ---------- สมาชิก ----------
+    PREMIUM_PRICE_BAHT: int = 59
+    PREMIUM_PERIOD_DAYS: int = 30
+    FREE_DAILY_NUMBER_CHECKS: int = 5
+    # mock = ระบบชำระเงินจำลอง (กดยืนยันได้เอง) — เปลี่ยนเมื่อต่อ payment gateway จริง
+    PAYMENT_PROVIDER: str = "mock"
+    CHECKOUT_EXPIRE_MINUTES: int = 15
+    CONTACT_MAX_PER_HOUR: int = 5
 
     # ใช้คำนวณ "วันนี้" ของ dashboard ตามเวลาไทย
     APP_TIMEZONE: str = "Asia/Bangkok"

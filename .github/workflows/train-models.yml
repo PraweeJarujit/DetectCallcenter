@@ -1,0 +1,119 @@
+# เทรนโมเดล AI บนเครื่องของ GitHub (ดาวน์โหลด dataset จาก Hugging Face ได้ ซึ่งเครื่องทั่วไปอาจโหลดช้า)
+# ผลลัพธ์: commit ไฟล์โมเดล + ผลวัดความแม่นยำกลับเข้า branch เดิม และแนบเป็น artifact
+#
+# รันเองได้จากแท็บ Actions -> Train AI models -> Run workflow
+# และรันอัตโนมัติเมื่อแก้โค้ดเทรนใน branch ที่ไม่ใช่ main
+name: Train AI models
+
+on:
+  workflow_dispatch:
+    inputs:
+      itw_per_class:
+        description: "จำนวนคลิปต่อคลาสจาก In-the-Wild"
+        default: "4000"
+      thai_fake:
+        description: "จำนวนเสียงสังเคราะห์ภาษาไทยที่จะสร้าง"
+        default: "1500"
+      with_mms:
+        description: "สร้างเสียงปลอมด้วย MMS-TTS (ต้องติดตั้ง torch)"
+        type: boolean
+        default: true
+  push:
+    branches-ignore: [main]
+    paths:
+      - "ai-service/training/**"
+      - "ai-service/app/features.py"
+      - "ai-service/app/audio.py"
+      - "ai-service/app/text_signals.py"
+      - ".github/workflows/train-models.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: train-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      ITW_PER_CLASS: ${{ inputs.itw_per_class || '4000' }}
+      THAI_FAKE: ${{ inputs.thai_fake || '1500' }}
+      WITH_MMS: ${{ inputs.with_mms == false && 'false' || 'true' }}
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - name: Free disk space (dataset zip 8 GB)
+        working-directory: /
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ai-service/requirements-train.txt
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libsndfile1
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-train.txt
+          if [ "$WITH_MMS" = "true" ]; then
+            pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+            pip install transformers==4.47.1
+          fi
+
+      - name: Train text model (Thai scam messages)
+        run: python -m training.train_text --out models
+
+      - name: Download In-the-Wild dataset (8 GB)
+        run: |
+          mkdir -p data/voice/dl
+          curl -fL --retry 5 --retry-delay 10 -C - -o data/voice/dl/release_in_the_wild.zip \
+            https://huggingface.co/datasets/mueller91/In-The-Wild/resolve/main/release_in_the_wild.zip
+          ls -lh data/voice/dl
+
+      - name: Prepare voice data (In-the-Wild + FLEURS Thai + Thai TTS)
+        run: |
+          MMS_FLAG=""; [ "$WITH_MMS" = "true" ] && MMS_FLAG="--with-mms"
+          python -m training.prepare_voice_data --out data/voice \
+            --itw-zip data/voice/dl/release_in_the_wild.zip \
+            --itw-per-class "$ITW_PER_CLASS" --thai-fake "$THAI_FAKE" $MMS_FLAG
+          rm -f data/voice/dl/release_in_the_wild.zip
+          df -h /
+
+      - name: Train voice model
+        run: python -m training.train_voice --manifest data/voice/manifest.csv --out models --workers 4
+
+      - name: Test with the new models
+        run: pytest
+
+      - name: Summary
+        run: |
+          {
+            echo "## Voice model"; echo '```json'; python -c "import json;m=json.load(open('models/voice_metrics.json'));print(json.dumps({k:m[k] for k in ('algorithm','clips','fake_engines','test')},ensure_ascii=False,indent=2))"; echo '```'
+            echo "## Text model"; echo '```json'; python -c "import json;m=json.load(open('models/text_metrics.json'));print(json.dumps({k:m[k] for k in ('data_sources','held_out_unseen_templates','hand_written_eval')},ensure_ascii=False,indent=2))"; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voiceguard-models
+          path: |
+            ai-service/models/*.joblib
+            ai-service/models/*.json
+            ai-service/data/voice/manifest.csv
+
+      - name: Commit models back to the branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models/*.joblib models/*.json
+          git diff --cached --quiet && { echo "no model changes"; exit 0; }
+          git commit -m "Train AI models (run ${{ github.run_number }})"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

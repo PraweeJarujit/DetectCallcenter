@@ -73,9 +73,9 @@ def test_password_hash_and_token_roundtrip():
     assert security.verify_password("Secret123", hashed)
     assert not security.verify_password("wrong", hashed)
 
-    token = security.create_access_token("user-1", {"role": "gov"})
+    token = security.create_access_token("user-1", {"role": "member"})
     payload = security.decode_access_token(token)
-    assert payload["sub"] == "user-1" and payload["role"] == "gov" and payload["jti"]
+    assert payload["sub"] == "user-1" and payload["role"] == "member" and payload["jti"]
     assert security.decode_access_token(token + "x") is None
     assert security.decode_access_token("not-a-jwt") is None
 

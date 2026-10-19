@@ -1,0 +1,96 @@
+# CI: ทุก push เข้า main และทุก Pull Request -> รัน test ของ backend + AI service + build Docker image
+# (ตามคู่มือ GitHub Actions ภาค 2 หมวด 3 และ 5 — ตั้ง Branch protection ให้ต้องผ่าน job เหล่านี้ก่อน merge)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    # PostgreSQL จริง (ตัวเดียวกับ production) สำหรับตรวจ migration และรัน test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dcc
+          POSTGRES_PASSWORD: dcc
+          POSTGRES_DB: dcc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dcc" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dcc:dcc@localhost:5432/dcc
+      JWT_SECRET_KEY: ci-only-secret-key-not-used-anywhere-else-123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Migrations apply cleanly and match the models
+        run: |
+          alembic upgrade head
+          alembic check
+          python -m app.seed
+      - name: Create test database
+        run: PGPASSWORD=dcc psql -h localhost -U dcc -d dcc -c "CREATE DATABASE dcc_test"
+      - name: Test on PostgreSQL (pytest + coverage >= 70%)
+        run: pytest
+        env:
+          TEST_DATABASE_URL: postgresql://dcc:dcc@localhost:5432/dcc_test
+
+  ai-service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ai-service/requirements-dev.txt
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libsndfile1
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check .
+      - name: Test (pytest + coverage >= 80%)
+        run: pytest
+      - name: Check trained models load
+        run: |
+          python - <<'PY'
+          import json, pathlib, joblib
+          d = pathlib.Path("models")
+          if (d / "voice_model.joblib").exists():
+              b = joblib.load(d / "voice_model.joblib"); print("voice model", b["version"], b["algorithm"])
+              print(json.dumps(json.loads((d / "voice_metrics.json").read_text())["test"]["overall_clean"]))
+          if (d / "text_model.joblib").exists():
+              joblib.load(d / "text_model.joblib"); print("text model ok")
+          PY
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [backend, ai-service]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t voiceguard-api ./backend
+      - name: Build AI service image
+        run: docker build -t voiceguard-ai ./ai-service

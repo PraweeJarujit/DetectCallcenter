@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class CallSource(str, enum.Enum):
     number_check = "number_check"   # ตรวจเบอร์ผ่าน /detect/number
     audio = "audio"                 # วิเคราะห์ไฟล์เสียงผ่าน /detect/audio
+    text = "text"                   # วิเคราะห์ข้อความ SMS/LINE ผ่าน /detect/text
     demo = "demo"                   # จากหน้า Call Demo
 
 
@@ -34,7 +35,8 @@ class CallLog(Base):
     id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
     )
-    phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
+    # ตรวจข้อความ/ไฟล์เสียงโดยไม่ระบุเบอร์ได้ -> nullable
+    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

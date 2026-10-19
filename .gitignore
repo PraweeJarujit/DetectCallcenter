@@ -12,3 +12,6 @@ node_modules/
 htmlcov/
 # ไฟล์ชั่วคราวจาก Claude
 Claude outputs/
+
+# ข้อมูลเทรนโมเดล (ดาวน์โหลดใหม่ได้ ไม่เก็บใน git)
+ai-service/data/

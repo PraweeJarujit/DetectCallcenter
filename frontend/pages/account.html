@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<title>บัญชีของฉัน | VoiceGuard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header id="shell"></header>
+<main class="page">
+  <div class="container stack" style="max-width:820px;--gap:24px">
+    <div class="page-head" style="margin-bottom:0">
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">บัญชีของฉัน</h1>
+      <p class="muted" id="who"></p>
+    </div>
+
+    <section class="panel" id="upgrade">
+      <div class="panel-head"><h2>แพ็กเกจ</h2><span id="plan-pill"></span></div>
+      <div class="plan-card">
+        <div id="plan-text"></div>
+        <div id="plan-action"></div>
+      </div>
+      <div id="payments-wrap" hidden style="margin-top:22px">
+        <h3 style="font-size:1rem;margin-bottom:8px">ประวัติการชำระเงิน</h3>
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>วันที่</th><th>เลขอ้างอิง</th><th>รอบการใช้งาน</th><th>ยอด</th><th>สถานะ</th></tr></thead>
+          <tbody id="payments"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="contacts">
+      <div class="panel-head"><h2>ผู้ติดต่อฉุกเฉิน</h2></div>
+      <div class="row" style="align-items:center;justify-content:space-between;flex-wrap:nowrap">
+        <div>
+          <strong>แจ้งผู้ติดต่อเมื่อพบความเสี่ยงสูง</strong>
+          <p class="small muted">เมื่อ AI พบเสียงหรือข้อความเสี่ยงสูง ระบบจะแจ้งคนเหล่านี้ (Premium · ตอนนี้ยังเป็นโหมดทดลอง ไม่ส่ง SMS จริง)</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="auto-notify" aria-label="แจ้งผู้ติดต่อฉุกเฉินอัตโนมัติ"><span></span></label>
+      </div>
+      <ul class="list" id="contact-list" style="margin-top:14px"></ul>
+      <form class="row" id="contact-form" style="margin-top:12px" novalidate>
+        <div class="grow"><label for="ct-name">ชื่อ</label><input class="input" id="ct-name" maxlength="100" placeholder="เช่น ลูกสาว"></div>
+        <div class="grow"><label for="ct-phone">เบอร์โทร</label><input class="input num" id="ct-phone" inputmode="tel" placeholder="08x-xxx-xxxx"></div>
+        <button class="btn btn-ink" type="submit" id="ct-submit">เพิ่มผู้ติดต่อ</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>ข้อมูลส่วนตัว</h2></div>
+      <form id="profile-form" class="row" novalidate>
+        <div class="grow"><label for="p-name">ชื่อที่แสดง</label><input class="input" id="p-name" maxlength="150"></div>
+        <div class="grow"><label for="p-email">อีเมล</label><input class="input" id="p-email" type="email"></div>
+        <button class="btn btn-ghost" type="submit">บันทึก</button>
+      </form>
+      <form id="password-form" class="row" style="margin-top:20px" novalidate>
+        <div class="grow"><label for="old-pw">รหัสผ่านเดิม</label><input class="input" id="old-pw" type="password" autocomplete="current-password"></div>
+        <div class="grow"><label for="new-pw">รหัสผ่านใหม่</label><input class="input" id="new-pw" type="password" autocomplete="new-password" placeholder="8 ตัวขึ้นไป มีตัวอักษรและตัวเลข"></div>
+        <button class="btn btn-ghost" type="submit">เปลี่ยนรหัสผ่าน</button>
+      </form>
+      <button class="btn btn-danger" data-logout style="margin-top:24px">ออกจากระบบ</button>
+    </section>
+  </div>
+</main>
+
+<dialog id="checkout">
+  <div class="dialog-body" id="checkout-body"></div>
+</dialog>
+
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+const me = requireLogin();
+if (me) {
+  mountShell("account");
+  let user = me;
+  let billing = null;
+  let contacts = [];
+  let editingId = null;
+
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("th-TH", { dateStyle: "long" }) : "–";
+  const PAY_STATUS = { paid: ["safe", "ชำระแล้ว"], pending: ["warn", "รอชำระ"], expired: ["plain", "หมดอายุ"], cancelled: ["plain", "ยกเลิก"] };
+
+  function renderUser(u) {
+    user = u;
+    document.getElementById("who").textContent = `${u.full_name || u.username} · ${u.email}`;
+    document.getElementById("p-name").value = u.full_name || "";
+    document.getElementById("p-email").value = u.email;
+    document.getElementById("auto-notify").checked = !!u.auto_notify;
+  }
+
+  async function loadBilling() {
+    billing = await apiGet("/billing/me");
+    const pillEl = document.getElementById("plan-pill");
+    const text = document.getElementById("plan-text");
+    const action = document.getElementById("plan-action");
+    if (user.role === "admin") {
+      pillEl.innerHTML = `<span class="pill pill-safe">ผู้ดูแลระบบ</span>`;
+      text.innerHTML = `<p>บัญชีผู้ดูแลระบบใช้ฟีเจอร์ Premium ได้ทั้งหมด</p>`;
+      action.innerHTML = "";
+      return;
+    }
+    if (billing.is_premium) {
+      pillEl.innerHTML = `<span class="pill pill-safe">Premium</span>`;
+      text.innerHTML = `<p><strong>Premium ${billing.price_baht} บาท/เดือน</strong></p>
+        <p class="muted">${billing.auto_renew ? "ต่ออายุอัตโนมัติวันที่" : "ใช้ได้ถึงวันที่"} ${fmtDate(billing.premium_until)}</p>`;
+      action.innerHTML = billing.auto_renew
+        ? `<button class="btn btn-ghost" id="cancel-btn">ยกเลิกการต่ออายุ</button>`
+        : `<button class="btn btn-primary" id="buy-btn">ต่ออายุ 1 เดือน</button>`;
+    } else {
+      const used = billing.usage.number_checks_today, limit = billing.usage.free_daily_limit;
+      pillEl.innerHTML = `<span class="pill pill-plain">ฟรี</span>`;
+      text.innerHTML = `<p><strong>แพ็กเกจฟรี</strong> · ตรวจเบอร์วันนี้ <span class="num">${used}/${limit}</span> ครั้ง</p>
+        <div class="usage-bar"><span style="width:${Math.min(100, (used / limit) * 100)}%"></span></div>
+        <p class="muted small" style="margin-top:8px">Premium ${billing.price_baht} บาท/เดือน: ตรวจเบอร์ไม่จำกัด, AI ตรวจข้อความและเสียง, แจ้งผู้ติดต่อฉุกเฉิน</p>`;
+      action.innerHTML = `<button class="btn btn-primary btn-lg" id="buy-btn">สมัคร Premium ${billing.price_baht} บาท</button>`;
+    }
+    const buy = document.getElementById("buy-btn");
+    if (buy) buy.addEventListener("click", () => openCheckout("promptpay"));
+    const cancel = document.getElementById("cancel-btn");
+    if (cancel) cancel.addEventListener("click", async () => {
+      if (!confirm(`ยกเลิกการต่ออายุ? ยังใช้ Premium ได้ถึง ${fmtDate(billing.premium_until)}`)) return;
+      try { await withLoading(cancel, () => apiPost("/billing/cancel", {})); showToast("ยกเลิกการต่ออายุแล้ว", 3000, "success"); loadBilling(); }
+      catch (e) { showError(e); }
+    });
+    const payments = await apiGet("/billing/payments");
+    document.getElementById("payments-wrap").hidden = !payments.some((p) => p.status === "paid");
+    document.getElementById("payments").innerHTML = payments.filter((p) => p.status === "paid").map((p) => {
+      const [tone, label] = PAY_STATUS[p.status];
+      return `<tr><td>${fmtDate(p.paid_at || p.created_at)}</td><td class="num">${escapeHtml(p.provider_ref)}</td>
+        <td>${fmtDate(p.period_start)} – ${fmtDate(p.period_end)}</td><td class="num">${p.amount_baht} บาท</td>
+        <td><span class="pill pill-${tone}">${label}</span></td></tr>`;
+    }).join("");
+  }
+
+  /* ---------- checkout (โหมดทดลอง) ---------- */
+  function fakeQr(ref) {
+    // ลาย QR สำหรับโหมดทดลองเท่านั้น สร้างจากเลขอ้างอิง (สแกนจ่ายจริงไม่ได้)
+    let h = 0; for (const ch of ref) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const n = 25, cells = [];
+    const finder = (x, y) => [[0, 0], [n - 7, 0], [0, n - 7]].some(([fx, fy]) => x >= fx && x < fx + 7 && y >= fy && y < fy + 7);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      if (finder(x, y)) continue;
+      h = (h * 1103515245 + 12345) >>> 0;
+      if (h & 0x10000) cells.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`);
+    }
+    const eye = (x, y) => `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" fill="none" stroke="#13201c" stroke-width="1"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+    return `<svg class="qr" viewBox="0 0 ${n} ${n}" role="img" aria-label="QR โหมดทดลอง"><g fill="#13201c">${cells.join("")}${eye(0, 0)}${eye(n - 7, 0)}${eye(0, n - 7)}</g></svg>`;
+  }
+
+  const dlg = document.getElementById("checkout");
+  async function openCheckout(method) {
+    try {
+      const co = await apiPost("/billing/checkout", { method });
+      const minutes = Math.max(1, Math.round((new Date(co.expires_at) - Date.now()) / 60000));
+      document.getElementById("checkout-body").innerHTML = `
+        <div class="panel-head"><h2>สมัคร Premium</h2><button class="btn btn-link" data-close aria-label="ปิด">${icon("close")}</button></div>
+        <div class="segmented" style="margin:4px 0 0">
+          <button type="button" data-method="promptpay" aria-selected="${co.method === "promptpay"}">พร้อมเพย์</button>
+          <button type="button" data-method="card" aria-selected="${co.method === "card"}">บัตรเครดิต/เดบิต</button>
+        </div>
+        ${co.method === "promptpay"
+          ? `${fakeQr(co.reference)}<p class="small muted" style="text-align:center">สแกนด้วยแอปธนาคารภายใน ${minutes} นาที</p>`
+          : `<div class="stack" style="margin-top:18px;--gap:12px">
+               <div><label for="cc">หมายเลขบัตร</label><input class="input num" id="cc" value="4242 4242 4242 4242" disabled></div>
+               <p class="small muted">ช่องบัตรถูกล็อกไว้ในโหมดทดลอง ระบบไม่รับข้อมูลบัตรจริง</p></div>`}
+        <dl class="facts">
+          <div class="fact"><dt>ยอดชำระ</dt><dd class="num">${co.amount_baht} บาท</dd></div>
+          <div class="fact"><dt>เลขอ้างอิง</dt><dd class="num">${escapeHtml(co.reference)}</dd></div>
+        </dl>
+        ${co.is_test_mode ? `<p class="test-banner">โหมดทดลอง: ยังไม่ได้เชื่อมระบบรับชำระเงินจริง กดปุ่มด้านล่างเพื่อจำลองว่าชำระสำเร็จ ไม่มีการตัดเงิน</p>` : ""}
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" data-close>ไว้ทีหลัง</button>
+          ${co.is_test_mode ? `<button class="btn btn-primary" data-confirm="${co.payment_id}">จำลองการชำระเงินสำเร็จ</button>` : ""}
+        </div>`;
+      if (!dlg.open) dlg.showModal();
+    } catch (e) { showError(e); }
+  }
+  dlg.addEventListener("click", async (e) => {
+    if (e.target === dlg || e.target.closest("[data-close]")) return dlg.close();
+    const m = e.target.closest("[data-method]");
+    if (m && m.getAttribute("aria-selected") !== "true") return openCheckout(m.dataset.method);
+    const c = e.target.closest("[data-confirm]");
+    if (c) {
+      try {
+        await withLoading(c, () => apiPost(`/billing/checkout/${c.dataset.confirm}/confirm`, {}), "กำลังยืนยัน...");
+        dlg.close();
+        const u = await apiGet("/me");
+        updateStoredUser(u); renderUser(u); renderPlanBadge(u);
+        showToast("เปิดใช้ Premium แล้ว ใช้ AI ตรวจข้อความและเสียงได้ทันที", 4200, "success");
+        loadBilling();
+      } catch (err) { showError(err); }
+    }
+  });
+
+  /* ---------- emergency contacts ---------- */
+  async function loadContacts() {
+    contacts = await apiGet("/contacts");
+    document.getElementById("contact-list").innerHTML = contacts.length ? contacts.map((c) => `
+      <li><span class="kind">${icon("user")}</span>
+        <div class="grow"><div class="title">${escapeHtml(c.name)}</div><div class="sub num">${escapeHtml(formatPhone(c.phone_number))}</div></div>
+        <button class="btn btn-ghost btn-sm" data-edit="${c.id}" aria-label="แก้ไข ${escapeHtml(c.name)}">${icon("edit")}</button>
+        <button class="btn btn-danger btn-sm" data-del="${c.id}" aria-label="ลบ ${escapeHtml(c.name)}">${icon("trash")}</button>
+      </li>`).join("") : `<li class="muted small">ยังไม่มีผู้ติดต่อ เพิ่มลูกหลานหรือคนที่ไว้ใจได้ด้านล่าง</li>`;
+  }
+  document.getElementById("contact-list").addEventListener("click", async (e) => {
+    const ed = e.target.closest("[data-edit]");
+    const del = e.target.closest("[data-del]");
+    if (ed) {
+      const c = contacts.find((x) => x.id === ed.dataset.edit);
+      editingId = c.id;
+      document.getElementById("ct-name").value = c.name;
+      document.getElementById("ct-phone").value = formatPhone(c.phone_number);
+      document.getElementById("ct-submit").textContent = "บันทึกการแก้ไข";
+      document.getElementById("ct-name").focus();
+    }
+    if (del) {
+      const c = contacts.find((x) => x.id === del.dataset.del);
+      if (!confirm(`ลบ ${c.name} ออกจากผู้ติดต่อฉุกเฉิน?`)) return;
+      try { await apiDelete(`/contacts/${c.id}`); showToast("ลบแล้ว", 2400, "success"); loadContacts(); } catch (err) { showError(err); }
+    }
+  });
+  document.getElementById("contact-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("ct-name").value.trim();
+    const phone = document.getElementById("ct-phone").value.replace(/[\s-]/g, "");
+    if (!name || !phone) return showToast("กรอกชื่อและเบอร์โทร", 2600, "error");
+    try {
+      await withLoading(e.submitter, () => editingId
+        ? apiPut(`/contacts/${editingId}`, { name, phone_number: phone })
+        : apiPost("/contacts", { name, phone_number: phone }));
+      showToast(editingId ? "บันทึกแล้ว" : `เพิ่ม ${name} แล้ว`, 2600, "success");
+      editingId = null; e.target.reset();
+      document.getElementById("ct-submit").textContent = "เพิ่มผู้ติดต่อ";
+      loadContacts();
+    } catch (err) { showError(err); }
+  });
+  document.getElementById("auto-notify").addEventListener("change", async (e) => {
+    try {
+      const u = await apiPut(`/users/${user.id}`, { auto_notify: e.target.checked });
+      updateStoredUser(u); renderUser(u);
+      showToast(u.auto_notify ? "เปิดการแจ้งผู้ติดต่อฉุกเฉินแล้ว" : "ปิดการแจ้งผู้ติดต่อฉุกเฉินแล้ว", 2600, "success");
+    } catch (err) { e.target.checked = !e.target.checked; showError(err); }
+  });
+
+  /* ---------- profile ---------- */
+  document.getElementById("profile-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const u = await withLoading(e.submitter, () => apiPut(`/users/${user.id}`, {
+        full_name: document.getElementById("p-name").value.trim() || null,
+        email: document.getElementById("p-email").value.trim(),
+      }));
+      updateStoredUser(u); renderUser(u); showToast("บันทึกข้อมูลแล้ว", 2400, "success");
+    } catch (err) { showError(err); }
+  });
+  document.getElementById("password-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const r = await withLoading(e.submitter, () => apiPost("/change-password", {
+        old_password: document.getElementById("old-pw").value, new_password: document.getElementById("new-pw").value,
+      }));
+      e.target.reset(); showToast(r.message, 2600, "success");
+    } catch (err) { showError(err); }
+  });
+
+  renderUser(me);
+  let autoOpened = false;
+  document.addEventListener("vg:user", async (e) => {
+    renderUser(e.detail);
+    try {
+      await loadBilling();
+      // มาจากปุ่ม "สมัคร Premium" ที่หน้าอื่น -> เปิดหน้าชำระเงินให้เลย ไม่ต้องกดซ้ำ
+      if (location.hash === "#upgrade" && !autoOpened && !billing.is_premium && user.role !== "admin") {
+        autoOpened = true;
+        openCheckout("promptpay");
+      }
+    } catch (err) { showError(err); }
+  });
+  loadContacts().catch(showError);
+  if (location.hash === "#upgrade") setTimeout(() => document.getElementById("upgrade").scrollIntoView(), 50);
+  if (location.hash === "#contacts") setTimeout(() => document.getElementById("contacts").scrollIntoView(), 50);
+}
+</script>
+</body>
+</html>
