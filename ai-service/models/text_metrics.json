@@ -1,0 +1,128 @@
+{
+  "model": "char n-gram TF-IDF (2-5) + LogisticRegression",
+  "trained_at": "2026-10-19T16:37:48Z",
+  "train_seconds": 3.7,
+  "data_sources": {
+    "template_corpus": 5516,
+    "wisesight_sentiment": 6000
+  },
+  "n_train_total": 11516,
+  "held_out_unseen_templates": {
+    "n": 2847,
+    "accuracy": 0.9842,
+    "precision": 0.976,
+    "recall": 0.9702,
+    "f1": 0.9731,
+    "roc_auc": 0.9977
+  },
+  "held_out_per_category": {
+    "bank_otp": {
+      "n": 80,
+      "correct_rate": 0.925
+    },
+    "bank_phishing": {
+      "n": 137,
+      "correct_rate": 1.0
+    },
+    "delivery": {
+      "n": 52,
+      "correct_rate": 1.0
+    },
+    "family_chat": {
+      "n": 41,
+      "correct_rate": 1.0
+    },
+    "family_impersonation": {
+      "n": 40,
+      "correct_rate": 1.0
+    },
+    "gambling": {
+      "n": 40,
+      "correct_rate": 1.0
+    },
+    "impersonate_agency": {
+      "n": 58,
+      "correct_rate": 1.0
+    },
+    "impersonate_police": {
+      "n": 73,
+      "correct_rate": 1.0
+    },
+    "investment": {
+      "n": 120,
+      "correct_rate": 1.0
+    },
+    "job": {
+      "n": 115,
+      "correct_rate": 0.8174
+    },
+    "otp_request": {
+      "n": 50,
+      "correct_rate": 1.0
+    },
+    "parcel": {
+      "n": 40,
+      "correct_rate": 1.0
+    },
+    "prize": {
+      "n": 120,
+      "correct_rate": 1.0
+    },
+    "romance": {
+      "n": 45,
+      "correct_rate": 0.9111
+    },
+    "service_notice": {
+      "n": 89,
+      "correct_rate": 1.0
+    },
+    "transcript_normal": {
+      "n": 53,
+      "correct_rate": 0.9057
+    },
+    "warning_from_authority": {
+      "n": 27,
+      "correct_rate": 0.8148
+    },
+    "wisesight": {
+      "n": 1600,
+      "correct_rate": 0.9975
+    },
+    "work_chat": {
+      "n": 67,
+      "correct_rate": 1.0
+    }
+  },
+  "hand_written_eval": {
+    "n": 48,
+    "accuracy": 0.9375,
+    "precision": 0.9565,
+    "recall": 0.9167,
+    "f1": 0.9362,
+    "roc_auc": 0.9965
+  },
+  "social_false_alarm": {
+    "n": 3000,
+    "flagged_rate": 0.0017,
+    "flagged_medium_or_high_rate": 0.0027
+  },
+  "wisesight_weight": 0.3,
+  "hand_written_mistakes": [
+    {
+      "text": "รับงานพิมพ์เอกสารที่บ้าน รายได้ดี จ่ายรายวัน แค่มีมือถือ สนใจทักไลน์ไอดีในโปรไฟล์",
+      "label": 1,
+      "scam_probability": 0.434
+    },
+    {
+      "text": "เราได้ตรวจพบไวรัสในมือถือคุณ กรุณาโหลดโปรแกรมรักษาความปลอดภัยและเปิดสิทธิ์การเข้าถึงทั้งหมด",
+      "label": 1,
+      "scam_probability": 0.377
+    },
+    {
+      "text": "ธนาคารขอแจ้ง ท่านทำรายการโอนเงิน 1,200 บาท สำเร็จ หากไม่ได้ทำรายการโทร 02 ที่หลังบัตร",
+      "label": 0,
+      "scam_probability": 0.517
+    }
+  ],
+  "threshold": 0.5
+}

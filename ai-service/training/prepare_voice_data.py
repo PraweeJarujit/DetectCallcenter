@@ -186,6 +186,7 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
             import soundfile as sf
             import torch
             from transformers import AutoTokenizer, VitsModel
+            torch.set_num_threads(2)  # runner มี 4 core — กันไม่ให้แย่ง CPU จนเครื่องค้าง
             tok = AutoTokenizer.from_pretrained("facebook/mms-tts-tha")
             model = VitsModel.from_pretrained("facebook/mms-tts-tha").eval()
             for i, sid in mms_jobs:
@@ -197,6 +198,8 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
                     model.speaking_rate = rng.uniform(0.9, 1.15)
                     wav = model(**inputs).waveform[0].numpy()
                 sf.write(dst, wav, model.config.sampling_rate)
+                if i % 50 == 0:
+                    print(f"MMS {i}/{len(plan)}", flush=True)
         except Exception as e:  # noqa: BLE001
             print(f"MMS-TTS unavailable: {e}")
 
@@ -209,7 +212,12 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
             continue
         rows.append({"path": str(wav), "label": 1, "source": "thai", "group": f"th/{sid}", "engine": engine})
     counts = {e: sum(r["engine"] == e for r in rows) for e in ("edge", "gtts", "mms")}
-    print(f"Thai TTS fakes: {len(rows)} {counts}")
+    print(f"Thai TTS fakes: {len(rows)} {counts}", flush=True)
+    # ถ้า engine ไหนสร้างเสียงได้น้อยผิดปกติ ให้ล้มทันที ดีกว่าได้โมเดลที่เห็นเสียงปลอมไทยแค่แบบเดียวโดยไม่รู้ตัว
+    planned = {e: sum(pe == e for _, pe in plan) for e in set(engines)}
+    short = {e: f"{counts[e]}/{n}" for e, n in planned.items() if counts[e] < 0.5 * n}
+    if short:
+        raise SystemExit(f"TTS engine produced too few clips: {short}")
     return rows
 
 
