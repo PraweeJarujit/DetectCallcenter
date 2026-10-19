@@ -209,7 +209,12 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
             continue
         rows.append({"path": str(wav), "label": 1, "source": "thai", "group": f"th/{sid}", "engine": engine})
     counts = {e: sum(r["engine"] == e for r in rows) for e in ("edge", "gtts", "mms")}
-    print(f"Thai TTS fakes: {len(rows)} {counts}")
+    print(f"Thai TTS fakes: {len(rows)} {counts}", flush=True)
+    # ถ้า engine ไหนสร้างเสียงได้น้อยผิดปกติ ให้ล้มทันที ดีกว่าได้โมเดลที่เห็นเสียงปลอมไทยแค่แบบเดียวโดยไม่รู้ตัว
+    planned = {e: sum(pe == e for _, pe in plan) for e in set(engines)}
+    short = {e: f"{counts[e]}/{n}" for e, n in planned.items() if counts[e] < 0.5 * n}
+    if short:
+        raise SystemExit(f"TTS engine produced too few clips: {short}")
     return rows
 
 

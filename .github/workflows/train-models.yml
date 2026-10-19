@@ -41,7 +41,9 @@ jobs:
     env:
       ITW_PER_CLASS: ${{ inputs.itw_per_class || '4000' }}
       THAI_FAKE: ${{ inputs.thai_fake || '1500' }}
-      WITH_MMS: ${{ inputs.with_mms == false && 'false' || 'true' }}
+      # push ไม่มี inputs (null == false เป็นจริงใน expression) จึงเช็ก event ก่อน
+      WITH_MMS: ${{ github.event_name == 'workflow_dispatch' && inputs.with_mms == false && 'false' || 'true' }}
+      PYTHONUNBUFFERED: "1"   # ให้ log ขึ้นทันทีระหว่างรัน
       HF_HUB_DISABLE_PROGRESS_BARS: "1"
     defaults:
       run:
@@ -67,6 +69,16 @@ jobs:
             pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
             pip install transformers==4.47.1
           fi
+
+      - name: Check Thai TTS engines (fail fast before the 8 GB download)
+        run: |
+          python - <<'PY'
+          import asyncio, edge_tts
+          from gtts import gTTS
+          asyncio.run(edge_tts.Communicate("ทดสอบเสียงภาษาไทย", "th-TH-PremwadeeNeural").save("/tmp/edge.mp3"))
+          gTTS("ทดสอบเสียงภาษาไทย", lang="th").save("/tmp/gtts.mp3")
+          import os; print({f: os.path.getsize(f) for f in ("/tmp/edge.mp3", "/tmp/gtts.mp3")})
+          PY
 
       - name: Train text model (Thai scam messages)
         run: python -m training.train_text --out models
