@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     PREMIUM_PRICE_BAHT: int = 59
     PREMIUM_PERIOD_DAYS: int = 30
     FREE_DAILY_NUMBER_CHECKS: int = 5
+    # ตรวจระหว่างสาย: หน้าเว็บส่งเสียงช่วงละ 4 วินาที ทุก 2 วินาที -> 30 ช่วง ≈ ฟังได้ราว 1 นาทีต่อวัน
+    LIVE_FREE_CHUNKS_PER_DAY: int = 30
+    LIVE_MAX_CHUNK_BYTES: int = 512 * 1024
     # mock = ระบบชำระเงินจำลอง (กดยืนยันได้เอง) — เปลี่ยนเมื่อต่อ payment gateway จริง
     PAYMENT_PROVIDER: str = "mock"
     CHECKOUT_EXPIRE_MINUTES: int = 15

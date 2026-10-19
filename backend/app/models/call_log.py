@@ -19,7 +19,8 @@ class CallSource(str, enum.Enum):
     number_check = "number_check"   # ตรวจเบอร์ผ่าน /detect/number
     audio = "audio"                 # วิเคราะห์ไฟล์เสียงผ่าน /detect/audio
     text = "text"                   # วิเคราะห์ข้อความ SMS/LINE ผ่าน /detect/text
-    demo = "demo"                   # จากหน้า Call Demo
+    demo = "demo"                   # จากหน้า Call Demo (เวอร์ชันเก่า)
+    live = "live"                   # ตรวจระหว่างสายแบบเรียลไทม์ผ่าน /live/summary
 
 
 class CallLog(Base):
