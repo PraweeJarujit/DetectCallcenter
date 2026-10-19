@@ -2,7 +2,7 @@
 สร้างไฟล์เสียง "สายตัวอย่าง" สำหรับหน้า ตรวจระหว่างสาย (frontend/audio/)
 
   scam_ai.mp3     มิจฉาชีพแอบอ้างเป็นตำรวจ พูดด้วยเสียงสังเคราะห์ (edge-tts) — ข้อความเขียนใหม่ ไม่อยู่ในชุดเทรน
-  real_human.mp3  เสียงคนไทยจริงจาก FLEURS (split "train" ซึ่งไม่ได้ใช้เทรนโมเดล) CC-BY 4.0
+  real_human.mp3  เสียงคนไทยจริงจาก FLEURS split "test" (ผู้พูดที่โมเดลไม่เคยได้ยินตอนเทรน) CC-BY 4.0
 
 ทั้งสองไฟล์ผ่านช่องสัญญาณโทรศัพท์จำลองแบบเดียวกัน แล้วให้โมเดลจริงให้คะแนนทีละช่วง 4 วินาที (เลื่อนทีละ 2 วินาที
 แบบเดียวกับหน้าเว็บ) เก็บผลไว้ใน demo-calls.json เพื่อตรวจว่าเดโมแสดงผลตามจริง
@@ -48,8 +48,12 @@ def _ffmpeg(*args: str) -> None:
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *args], check=True)
 
 
+_noise_rng = np.random.default_rng(11)
+
+
 def _gap(seconds: float) -> np.ndarray:
-    return np.zeros(int(seconds * TARGET_SR), dtype=np.float32)
+    """ช่วงหยุดพูดแบบสายจริง: มีเสียงรบกวนเบา ๆ ของสาย ไม่ใช่เงียบสนิท (ใช้เหมือนกันทั้ง 2 ไฟล์)"""
+    return _noise_rng.normal(0, 0.002, int(seconds * TARGET_SR)).astype(np.float32)
 
 
 async def _tts(text: str, dst: Path) -> None:
@@ -70,8 +74,8 @@ def make_scam(tmp: Path) -> np.ndarray:
 
 
 def make_real(tmp: Path, seconds: float = 34.0) -> tuple[np.ndarray, list[str]]:
-    tsv = download(f"{FLEURS}/train.tsv", tmp / "train.tsv")
-    tar = download(f"{FLEURS}/audio/train.tar.gz", tmp / "train.tar.gz")
+    tsv = download(f"{FLEURS}/test.tsv", tmp / "test.tsv")
+    tar = download(f"{FLEURS}/audio/test.tar.gz", tmp / "test.tar.gz")
     rows = [line.split("\t") for line in tsv.read_text(encoding="utf-8").splitlines()]
     # ใช้ผู้พูดเพศเดียวกันทั้งไฟล์ ให้ฟังเหมือนคนคนเดียวคุยโทรศัพท์
     wanted = {r[1]: r[2] for r in rows if len(r) >= 7 and r[6].strip().upper() == "FEMALE"}
@@ -138,7 +142,7 @@ def main() -> None:
         tmp = Path(d)
         clips = {"scam_ai": (make_scam(tmp), {"script": SCAM_SCRIPT, "voice": f"edge-tts {SCAM_VOICE}"})}
         real, used = make_real(tmp)
-        clips["real_human"] = (real, {"script": used, "voice": "FLEURS th_th train (CC-BY 4.0), female speakers"})
+        clips["real_human"] = (real, {"script": used, "voice": "FLEURS th_th test split (CC-BY 4.0), held out from training"})
 
         report = {"model_version": bundle.get("version")}
         for name, (audio, meta) in clips.items():

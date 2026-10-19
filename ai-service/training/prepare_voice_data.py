@@ -98,8 +98,9 @@ def prepare_itw(out: Path, zip_path: Path, per_class: int, rng: random.Random) -
 
 # ------------------------------ FLEURS Thai ------------------------------
 
-def prepare_fleurs(out: Path, splits: list[str]) -> tuple[list[dict], dict[str, str]]:
-    rows, sentences = [], {}
+def prepare_fleurs(out: Path, splits: list[str]) -> tuple[list[dict], dict[str, str], dict[str, str]]:
+    """FLEURS แต่ละ split มีผู้พูดและประโยคไม่ซ้ำกัน -> ใช้ split "test" เป็นชุดทดสอบภาษาไทยแบบผู้พูดที่ไม่เคยได้ยิน"""
+    rows, sentences, sentence_split = [], {}, {}
     target = out / "fleurs"
     target.mkdir(parents=True, exist_ok=True)
     for split in splits:
@@ -121,10 +122,12 @@ def prepare_fleurs(out: Path, splits: list[str]) -> tuple[list[dict], dict[str, 
                     with tf.extractfile(member) as src, open(dst, "wb") as f:
                         shutil.copyfileobj(src, f)
                 sentences[sid] = text
-                rows.append({"path": str(dst), "label": 0, "source": "thai", "group": f"th/{sid}", "engine": "fleurs"})
+                sentence_split[sid] = split
+                rows.append({"path": str(dst), "label": 0, "source": "thai", "group": f"th/{sid}", "engine": "fleurs",
+                             "split": split})
         tar.unlink(missing_ok=True)
-    print(f"FLEURS th: {len(rows)} real clips, {len(sentences)} sentences")
-    return rows, sentences
+    print(f"FLEURS th: {len(rows)} real clips, {len(sentences)} sentences", flush=True)
+    return rows, sentences, sentence_split
 
 
 # ------------------------------ Thai TTS fakes ------------------------------
@@ -150,7 +153,8 @@ async def _edge_batch(jobs: list[tuple[str, str, Path]], rng: random.Random) -> 
     await asyncio.gather(*(one(*j) for j in jobs))
 
 
-def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: bool, rng: random.Random) -> list[dict]:
+def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: bool, rng: random.Random,
+               sentence_split: dict[str, str] | None = None) -> list[dict]:
     target = out / "tts"
     target.mkdir(parents=True, exist_ok=True)
     sids = list(sentences)
@@ -210,7 +214,8 @@ def make_fakes(out: Path, sentences: dict[str, str], n_total: int, with_mms: boo
         wav = f.with_name(f.stem + "_16k.wav")
         if not wav.exists() and not to_wav16k(f, wav):
             continue
-        rows.append({"path": str(wav), "label": 1, "source": "thai", "group": f"th/{sid}", "engine": engine})
+        rows.append({"path": str(wav), "label": 1, "source": "thai", "group": f"th/{sid}", "engine": engine,
+                     "split": (sentence_split or {}).get(sid, "")})
     counts = {e: sum(r["engine"] == e for r in rows) for e in ("edge", "gtts", "mms")}
     print(f"Thai TTS fakes: {len(rows)} {counts}", flush=True)
     # ถ้า engine ไหนสร้างเสียงได้น้อยผิดปกติ ให้ล้มทันที ดีกว่าได้โมเดลที่เห็นเสียงปลอมไทยแค่แบบเดียวโดยไม่รู้ตัว
@@ -226,8 +231,8 @@ def main() -> None:
     ap.add_argument("--out", default="data/voice")
     ap.add_argument("--itw-zip", default=None, help="ไฟล์ zip ที่ดาวน์โหลดไว้แล้ว (ถ้าไม่มีจะดาวน์โหลดเอง 8 GB)")
     ap.add_argument("--itw-per-class", type=int, default=4000)
-    ap.add_argument("--fleurs-splits", default="dev,test")
-    ap.add_argument("--thai-fake", type=int, default=1500)
+    ap.add_argument("--fleurs-splits", default="train,dev,test")
+    ap.add_argument("--thai-fake", type=int, default=2500)
     ap.add_argument("--with-mms", action="store_true")
     ap.add_argument("--skip-itw", action="store_true")
     ap.add_argument("--seed", type=int, default=7)
@@ -240,12 +245,12 @@ def main() -> None:
     if not args.skip_itw:
         zip_path = Path(args.itw_zip) if args.itw_zip else out / "dl" / "release_in_the_wild.zip"
         rows += prepare_itw(out, zip_path, args.itw_per_class, rng)
-    real_th, sentences = prepare_fleurs(out, args.fleurs_splits.split(","))
+    real_th, sentences, sentence_split = prepare_fleurs(out, args.fleurs_splits.split(","))
     rows += real_th
-    rows += make_fakes(out, sentences, args.thai_fake, args.with_mms, rng)
+    rows += make_fakes(out, sentences, args.thai_fake, args.with_mms, rng, sentence_split)
 
     with open(out / "manifest.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["path", "label", "source", "group", "engine"])
+        w = csv.DictWriter(f, fieldnames=["path", "label", "source", "group", "engine", "split"], restval="")
         w.writeheader()
         w.writerows(rows)
     print(f"manifest: {len(rows)} rows -> {out / 'manifest.csv'}")

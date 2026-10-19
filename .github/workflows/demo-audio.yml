@@ -2,13 +2,9 @@
 # รันเองได้จาก Actions -> Make demo call audio -> Run workflow
 name: Make demo call audio
 
+# (workflow Train AI models สร้างไฟล์ชุดนี้ใหม่ทุกครั้งที่เทรนอยู่แล้ว ไฟล์นี้ไว้รันแยกเมื่อแก้แค่สคริปต์เดโม)
 on:
   workflow_dispatch:
-  push:
-    branches-ignore: [main]
-    paths:
-      - "ai-service/training/make_demo_calls.py"
-      - ".github/workflows/demo-audio.yml"
 
 permissions:
   contents: write
