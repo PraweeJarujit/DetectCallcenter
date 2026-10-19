@@ -6,8 +6,10 @@
 แนวคิด: เสียงจาก TTS / voice clone มักทิ้งร่องรอยไว้ที่
   - สเปกตรัมช่วงความถี่สูง (vocoder สร้างย่าน 4-8 kHz ได้ไม่เหมือนธรรมชาติ)  -> LFCC, LTAS, high-band ratio
   - ความเรียบของสเปกตรัมและการเปลี่ยนแปลงระหว่างเฟรม                      -> flatness, flux, deltas
-  - ช่วงเงียบที่ "เงียบสนิทแบบดิจิทัล" ซึ่งเสียงจากไมค์จริงไม่มี                -> silence features
-ทุก feature ถูกสรุปเป็นค่าเฉลี่ย / ส่วนเบี่ยงเบน / เปอร์เซ็นไทล์ ต่อคลิป ได้เวกเตอร์ยาวคงที่
+ทุก feature คำนวณจากเฉพาะเฟรมที่มีเสียงพูด แล้วสรุปเป็นค่าเฉลี่ย / ส่วนเบี่ยงเบน / เปอร์เซ็นไทล์ ได้เวกเตอร์ยาวคงที่
+
+ไม่ใช้ลักษณะของ "ช่วงเงียบ" (voice-v1 เคยใช้) เพราะโมเดลไปจำว่าเงียบสนิท = TTS แทนที่จะดูตัวเสียง
+และแอปโทรศัพท์/LINE ก็ตัดเสียงรบกวนจนเงียบสนิทได้เหมือนกัน ทำให้เสียงคนจริงถูกตีว่าเป็น AI
 """
 from __future__ import annotations
 
@@ -92,7 +94,6 @@ def feature_names() -> list[str]:
     for stat in ("mean", "std", "p10", "p90"):
         names += [f"{n}_{stat}" for n in SPECTRAL_NAMES]
     names += [f"ltas{i}" for i in range(N_LTAS)]
-    names += ["silence_ratio", "digital_silence_ratio", "dynamic_range_db"]
     return names
 
 
@@ -144,13 +145,9 @@ def extract_features(audio: np.ndarray, sr: int = TARGET_SR) -> np.ndarray:
     mean_spec = p.mean(axis=0)
     ltas = np.log10(np.array([mean_spec[b].sum() for b in ltas_bands]) / (mean_spec.sum() + EPS) + EPS)
 
-    silence_ratio = 1.0 - voiced.mean()
-    digital_silence_ratio = float(np.mean(np.max(np.abs(raw_frames), axis=1) < 1e-4))
-    dynamic_range = float(np.percentile(frame_db, 95) - np.percentile(frame_db, 5))
 
     vec = np.concatenate([
         _stats(mfcc), _stats(_deltas(mfcc)), _stats(lfcc), _stats(_deltas(lfcc)),
         _stats(spectral, percentiles=True), ltas,
-        [silence_ratio, digital_silence_ratio, dynamic_range / 10.0],
     ]).astype(np.float32)
     return np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0)

@@ -17,6 +17,7 @@
   <div class="container">
     <a class="brand" href="index.html" id="brand"></a>
     <nav class="nav hide-mobile" aria-label="หน้าแรก">
+      <a href="#live">ตรวจระหว่างสาย</a>
       <a href="#how">ตรวจอะไรได้บ้าง</a>
       <a href="#pricing">ราคา</a>
       <a href="#contact">ติดต่อเรา</a>
@@ -43,6 +44,29 @@
         </div>
       </div>
       <div id="checker" class="hero-checker"></div>
+    </div>
+  </section>
+
+  <section class="section" id="live">
+    <div class="container live-feature">
+      <div>
+        <div class="section-head" style="margin-bottom:16px">
+          <h2>AI ฟังสายให้ ระหว่างที่คุณกำลังคุย</h2>
+          <p>มิจฉาชีพเริ่มใช้เสียงที่สร้างด้วย AI ปลอมเป็นตำรวจ เจ้าหน้าที่ธนาคาร หรือลูกหลาน เปิดหน้านี้ไว้ระหว่างสาย AI จะฟังเสียงทุก 2 วินาที และเตือนทันทีถ้าเสียงหรือคำพูดเข้าข่ายหลอกลวง</p>
+        </div>
+        <ul class="hero-points" id="live-points"></ul>
+        <div class="verdict-actions">
+          <a class="btn btn-primary btn-lg" href="pages/live.html?demo=scam" id="live-try"></a>
+          <a class="btn btn-ghost btn-lg" href="pages/live.html?source=mic">ใช้กับสายจริง</a>
+        </div>
+      </div>
+      <figure class="panel" style="margin:0" id="live-proof" hidden>
+        <figcaption><strong>ผลจริงจากโมเดล</strong> <span class="muted small">1 แท่ง = เสียง 2 วินาที</span></figcaption>
+        <p class="small" style="margin-top:12px">สายมิจฉาชีพที่ใช้เสียง AI <span class="muted" data-mean="scam_ai"></span></p>
+        <div class="trace trace-static" data-trace="scam_ai"></div>
+        <p class="small" style="margin-top:14px">เสียงคนไทยจริงที่โมเดลไม่เคยได้ยิน <span class="muted" data-mean="real_human"></span></p>
+        <div class="trace trace-static" data-trace="real_human"></div>
+      </figure>
     </div>
   </section>
 
@@ -147,15 +171,34 @@ if (user && getToken()) {
 }
 
 document.getElementById("hero-points").innerHTML = [
+  "AI ฟังระหว่างสาย เตือนทันทีถ้าปลายสายใช้เสียงสังเคราะห์",
   "ตรวจเบอร์กับรายชื่อเบอร์ที่ผู้ใช้แจ้งว่าเป็นมิจฉาชีพ ฟรี ไม่ต้องสมัคร",
   "AI อ่านข้อความ SMS / LINE แล้วชี้จุดที่เข้าข่ายหลอกลวง",
-  "AI ฟังเสียงว่าเป็นเสียงคนจริง หรือเสียงที่สร้างขึ้นเลียนแบบ",
 ].map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
+
+document.getElementById("live-points").innerHTML = [
+  "ใช้ได้ทั้งเปิดลำโพงให้มือถือหรือคอมฟัง และสายจาก LINE / Messenger บนคอม",
+  "ฟังทั้งลักษณะเสียง และคำพูดอย่าง \"โอนเงินเพื่อตรวจสอบ\" \"ห้ามบอกใคร\"",
+  "ไม่เก็บเสียงของคุณ เก็บเฉพาะผลตรวจ",
+].map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
+document.getElementById("live-try").innerHTML = `${icon("phone")}ลองสายตัวอย่าง`;
+fetch("audio/demo-calls.json").then((r) => (r.ok ? r.json() : null)).then((d) => {
+  if (!d) return;
+  const tone = (v) => (v >= 70 ? "danger" : v >= 40 ? "warn" : "safe");
+  for (const key of ["scam_ai", "real_human"]) {
+    const c = d[key];
+    if (!c) return;
+    document.querySelector(`[data-trace="${key}"]`).innerHTML = c.window_scores
+      .map((v) => `<span class="${tone(v)}" style="height:${Math.max(8, v)}%" title="${v}/100"></span>`).join("");
+    document.querySelector(`[data-mean="${key}"]`).textContent = `เฉลี่ย ${Math.round(c.mean)}/100`;
+  }
+  document.getElementById("live-proof").hidden = false;
+}).catch(() => {});
 
 document.getElementById("how-items").innerHTML = [
   ["phone", "เบอร์โทร", "ใส่เบอร์ที่โทรหรือส่งข้อความมา ระบบเทียบกับเบอร์ที่ถูกแจ้ง บอกจำนวนครั้งที่ถูกแจ้งและระดับความเสี่ยง ใช้ฟรีวันละ 5 ครั้ง"],
   ["message", "ข้อความ SMS / LINE", "วางข้อความที่ได้รับ AI บอกว่าเข้าข่ายหลอกลวงแค่ไหน และชี้ว่าตรงไหนน่าสงสัย เช่น อ้างเป็นเจ้าหน้าที่ เร่งให้โอนเงิน หรือมีลิงก์ปลอม"],
-  ["mic", "เสียงในสาย", "อัปโหลดไฟล์เสียงหรืออัดเสียงจากลำโพงระหว่างคุย AI ตรวจว่าเป็นเสียงสังเคราะห์ที่มิจฉาชีพใช้เลียนเสียงคนรู้จักหรือไม่"],
+  ["mic", "ไฟล์เสียง", "อัปโหลดไฟล์เสียงหรือ voice message ที่ได้รับ AI ตรวจว่าเป็นเสียงสังเคราะห์ที่มิจฉาชีพใช้เลียนเสียงคนรู้จักหรือไม่ หรือให้ AI ฟังสดระหว่างสายในหน้า ตรวจระหว่างสาย"],
 ].map(([ic, h, p]) => `<div>${icon(ic, "icon icon-lg")}<h3>${h}</h3><p class="muted">${p}</p></div>`).join("");
 
 mountChecker(document.getElementById("checker"));

@@ -46,9 +46,23 @@ def reverb(x: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return fftconvolve(x, ir)[: len(x)].astype(np.float32)
 
 
+def silence_gap(x: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """แทนช่วงหนึ่งด้วยความเงียบสนิทหรือเสียงรบกวนเบา ๆ (ทั้งเสียงจริงและปลอม) ให้โมเดลไม่ใช้ความเงียบเป็นตัวตัดสิน"""
+    y = x.copy()
+    n = int(rng.uniform(0.2, 0.9) * SR)
+    if len(y) <= n * 2:
+        return y
+    start = int(rng.integers(0, len(y) - n))
+    y[start:start + n] = 0.0 if rng.random() < 0.5 else rng.normal(0, 10 ** (rng.uniform(-4, -2.5)), n)
+    return y
+
+
 def random_augment(x: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, list[str]]:
     applied = []
     y = x.astype(np.float32)
+    if rng.random() < 0.35:
+        y = silence_gap(y, rng)
+        applied.append("gap")
     if rng.random() < 0.3:
         y = reverb(y, rng)
         applied.append("reverb")
@@ -58,7 +72,7 @@ def random_augment(x: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray,
     if rng.random() < 0.6:
         y = add_noise(y, rng, rng.uniform(10, 35))
         applied.append("noise")
-    if not applied:
+    if applied in ([], ["gap"]):
         y = add_noise(y, rng, rng.uniform(20, 40))
         applied.append("noise")
     peak = np.max(np.abs(y)) + 1e-9

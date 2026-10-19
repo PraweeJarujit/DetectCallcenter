@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, setup_logging
 from app.database import SessionLocal
-from app.routers import auth, billing, calls, contacts, detect, users
+from app.routers import auth, billing, calls, contacts, detect, live, users
 
 setup_logging(settings.LOG_LEVEL)
 logger = logging.getLogger("app")
@@ -49,6 +49,7 @@ app.include_router(detect.router, prefix="/api")
 app.include_router(calls.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
+app.include_router(live.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["health"])

@@ -4,8 +4,8 @@
 ขั้นตอน
   1. อ่านเสียงด้วยฟังก์ชันเดียวกับตอนใช้งานจริง (app.audio.load_audio) แล้วสุ่มตัดช่วง 4 วินาที
   2. ทุกคลิปได้ 2 ตัวอย่าง: เสียงเดิม 1 + เสียงที่ผ่าน augmentation (noise / สายโทรศัพท์ / ห้องก้อง) 1
-  3. แบ่ง train/test แบบไม่ให้รั่ว: In-the-Wild แยกตาม "ผู้พูด", ภาษาไทยแยกตาม "ประโยค"
-     (ผู้พูด/ประโยคใน test ไม่เคยถูกเห็นตอนเทรน)
+  3. แบ่ง train/test แบบไม่ให้รั่ว: In-the-Wild แยกตาม "ผู้พูด", ภาษาไทยใช้ split "test" ของ FLEURS
+     (ผู้พูดและประโยคใน test ไม่เคยถูกเห็นตอนเทรน เสียงปลอมไทยตามประโยคที่ใช้สร้าง)
   4. เทียบ 2 โมเดล (Logistic Regression, HistGradientBoosting) เลือกตัวที่ AUC ดีกว่า
   5. รายงานผลแยกตามแหล่งข้อมูล + แยกเฉพาะเสียงที่ผ่านสายโทรศัพท์ แล้วเทรนใหม่ด้วยข้อมูลทั้งหมด
 
@@ -37,7 +37,7 @@ from app.audio import SEGMENT_SECONDS, TARGET_SR, AudioDecodeError, load_audio, 
 from app.features import N_FEATURES, extract_features, feature_names  # noqa: E402
 from training.augment import phone_channel, random_augment  # noqa: E402
 
-MODEL_VERSION = "voice-v1"
+MODEL_VERSION = "voice-v2"
 
 
 def _crop(x: np.ndarray, rng: np.random.Generator) -> np.ndarray:
@@ -125,8 +125,12 @@ def main() -> None:
 
     # แบ่งแยกกันต่อแหล่ง เพื่อให้ทั้ง 2 แหล่งมีใน test เสมอ
     test_mask = np.zeros(len(rows), dtype=bool)
+    splits = np.array([r.get("split") or "" for r in rows])
     for src in np.unique(sources):
         idx = np.where(sources == src)[0]
+        if (splits[idx] == "test").any():  # FLEURS: ผู้พูด/ประโยคแยกกันอยู่แล้ว
+            test_mask[idx[splits[idx] == "test"]] = True
+            continue
         gss = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.seed)
         _, te = next(gss.split(idx, y[idx], groups[idx]))
         test_mask[idx[te]] = True
@@ -189,7 +193,7 @@ def main() -> None:
         "n_features": N_FEATURES,
         "clips": counts,
         "fake_engines": {str(e): int((engines == e).sum()) for e in np.unique(engines)},
-        "split": "In-the-Wild แยกตามผู้พูด / ไทยแยกตามประโยค, test 20%",
+        "split": "In-the-Wild แยกตามผู้พูด (test 20%) / ไทยใช้ FLEURS split test (ผู้พูดและประโยคที่ไม่เคยเห็น)",
         "test": evaluation,
         "feature_seconds": feature_seconds,
     }

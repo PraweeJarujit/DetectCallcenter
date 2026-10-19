@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<title>ตรวจระหว่างสาย | VoiceGuard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header id="shell"></header>
+<main class="page">
+  <div class="container">
+    <div class="page-head">
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">ตรวจระหว่างสาย</h1>
+      <p class="muted">ให้ AI ฟังเสียงปลายสายสด ๆ ทุก 2 วินาที เตือนทันทีถ้าเป็นเสียงสังเคราะห์ หรือพูดเข้าข่ายหลอกลวง</p>
+    </div>
+    <div class="grid-2">
+      <section class="checker live-card">
+        <div class="modes" role="tablist" aria-label="ฟังเสียงจากไหน" id="lv-sources"></div>
+        <div class="checker-body" id="lv-body"></div>
+      </section>
+      <aside class="stack" style="--gap:20px">
+        <section class="panel">
+          <h3>AI ฟังอะไร</h3>
+          <ul class="facts-list">
+            <li><i data-icon="wave"></i><div><strong>เสียงพูด</strong><span class="muted">ลักษณะสเปกตรัมที่เสียงจาก TTS / voice clone ทิ้งไว้ ตรวจทีละช่วง 4 วินาที</span></div></li>
+            <li><i data-icon="message"></i><div><strong>คำพูด</strong><span class="muted">ถอดเสียงภาษาไทยแล้วจับคำอย่าง "โอนเงินเพื่อตรวจสอบ" "ห้ามบอกใคร" (Premium)</span></div></li>
+            <li><i data-icon="phone"></i><div><strong>เบอร์ที่โทรมา</strong><span class="muted">ตรวจกับรายชื่อเบอร์ที่ผู้ใช้แจ้ง ถ้าใส่เบอร์ไว้</span></div></li>
+          </ul>
+        </section>
+        <section class="panel">
+          <h3>ข้อจำกัดที่ควรรู้</h3>
+          <p class="muted small" style="margin-top:6px">เว็บดักเสียงจากสายโทรศัพท์มือถือโดยตรงไม่ได้ (ระบบ iOS / Android ไม่อนุญาต) จึงใช้วิธีเปิดลำโพงให้ไมค์ได้ยิน หรือดึงเสียงจากแอปโทรบนคอม ผลเป็นการช่วยตัดสินใจ ไม่ใช่คำตัดสิน</p>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/live.js"></script>
+<script>
+// ใช้ได้ทั้งตอน login และไม่ login (ทดลองสายตัวอย่างได้ฟรี)
+if (getToken() && getCurrentUser()) {
+  mountShell("live");
+} else {
+  const header = document.getElementById("shell");
+  header.className = "topbar";
+  header.innerHTML = `<div class="container">
+      <a class="brand" href="../index.html">${brandMark()}<span>VoiceGuard</span></a>
+      <div class="topbar-end">
+        <a class="btn btn-ghost btn-sm" href="login.html?next=live.html">เข้าสู่ระบบ</a>
+        <a class="btn btn-primary btn-sm" href="login.html?mode=register&next=live.html">สมัครฟรี</a>
+      </div></div>`;
+}
+document.querySelectorAll("[data-icon]").forEach((el) => { el.outerHTML = icon(el.dataset.icon); });
+mountLive();
+document.addEventListener("vg:user", () => refreshQuota());
+</script>
+</body>
+</html>

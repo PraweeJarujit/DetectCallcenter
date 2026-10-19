@@ -13,7 +13,7 @@ on:
         default: "4000"
       thai_fake:
         description: "จำนวนเสียงสังเคราะห์ภาษาไทยที่จะสร้าง"
-        default: "1500"
+        default: "2500"
       with_mms:
         description: "เพิ่มเสียงปลอมจาก MMS-TTS (ใช้ torch บน CPU ช้าและกินแรม · ใบอนุญาต CC-BY-NC)"
         type: boolean
@@ -22,6 +22,7 @@ on:
     branches-ignore: [main]
     paths:
       - "ai-service/training/**"
+      - "!ai-service/training/make_demo_calls.py"   # สร้างเสียงเดโม ไม่เกี่ยวกับการเทรน
       - "ai-service/app/features.py"
       - "ai-service/app/audio.py"
       - "ai-service/app/text_signals.py"
@@ -40,7 +41,7 @@ jobs:
     timeout-minutes: 300
     env:
       ITW_PER_CLASS: ${{ inputs.itw_per_class || '4000' }}
-      THAI_FAKE: ${{ inputs.thai_fake || '1500' }}
+      THAI_FAKE: ${{ inputs.thai_fake || '2500' }}
       # MMS เปิดเฉพาะตอนกดรันเองแล้วเลือก with_mms (push ไม่มี inputs)
       WITH_MMS: ${{ github.event_name == 'workflow_dispatch' && inputs.with_mms && 'true' || 'false' }}
       PYTHONUNBUFFERED: "1"   # ให้ log ขึ้นทันทีระหว่างรัน
@@ -105,11 +106,15 @@ jobs:
       - name: Test with the new models
         run: pytest
 
+      - name: Make demo call audio with the new model
+        run: python -m training.make_demo_calls --out ../frontend/audio
+
       - name: Summary
         run: |
           {
             echo "## Voice model"; echo '```json'; python -c "import json;m=json.load(open('models/voice_metrics.json'));print(json.dumps({k:m[k] for k in ('algorithm','clips','fake_engines','test')},ensure_ascii=False,indent=2))"; echo '```'
             echo "## Text model"; echo '```json'; python -c "import json;m=json.load(open('models/text_metrics.json'));print(json.dumps({k:m[k] for k in ('data_sources','held_out_unseen_templates','hand_written_eval')},ensure_ascii=False,indent=2))"; echo '```'
+            echo "## Demo calls"; echo '```json'; cat ../frontend/audio/demo-calls.json; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
@@ -124,7 +129,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add models/*.joblib models/*.json
+          git add models/*.joblib models/*.json ../frontend/audio
           git diff --cached --quiet && { echo "no model changes"; exit 0; }
           git commit -m "Train AI models (run ${{ github.run_number }})"
           git pull --rebase origin "${GITHUB_REF_NAME}"

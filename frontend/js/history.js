@@ -4,6 +4,7 @@ const SOURCE_META = {
   text: { icon: "message", label: "ตรวจข้อความ" },
   audio: { icon: "mic", label: "ตรวจเสียง" },
   demo: { icon: "wave", label: "ทดลอง" },
+  live: { icon: "wave", label: "ตรวจระหว่างสาย" },
 };
 
 function historyRow(log) {
