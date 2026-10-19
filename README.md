@@ -66,23 +66,39 @@ db-indexing/, indexing-lab/, dashboard/   งานประกอบราย�
 - **ข้อมูลเทรน**
   - [In-the-Wild](https://huggingface.co/datasets/mueller91/In-The-Wild) — เสียงคนดังจริงกับ deepfake ที่หลุดออกมาในโลกจริง (อังกฤษ) แบ่ง train/test ตามตัวผู้พูด ไม่ให้คนเดียวกันอยู่ทั้งสองฝั่ง
   - [Google FLEURS](https://huggingface.co/datasets/google/fleurs) ภาษาไทย (`th_th`) — เสียงคนไทยจริง
-  - เสียงสังเคราะห์ภาษาไทยที่สร้างเองจากประโยค FLEURS ด้วย edge-tts (Microsoft Neural 3 เสียง), gTTS และ [MMS-TTS ไทย](https://huggingface.co/facebook/mms-tts-tha) ของ Meta
+  - เสียงสังเคราะห์ภาษาไทยที่สร้างเองจากประโยค FLEURS ด้วย edge-tts (Microsoft Neural 3 เสียง) และ gTTS — เพิ่ม [MMS-TTS ไทย](https://huggingface.co/facebook/mms-tts-tha) ของ Meta ได้ตอนกดรัน workflow เอง (เลือก `with_mms`)
   - augment ทั้งเสียงจริงและเสียงปลอมเหมือนกัน (เสียงรบกวน, ช่องสัญญาณโทรศัพท์ 8 kHz, เสียงก้อง) เพื่อไม่ให้โมเดลจำ "คุณภาพไฟล์" แทนที่จะจำ "เสียงสังเคราะห์"
 - **โมเดล**: ตัดเสียงเป็นช่วง 4 วินาที → MFCC + LFCC + delta + spectral/LTAS (numpy/scipy) → HistGradientBoosting หรือ LogisticRegression (เลือกตัวที่ดีกว่าบนชุดทดสอบ) → คะแนนรวมจากค่าเฉลี่ยครึ่งบนของทุกช่วง
-- **ผลทดสอบ** (ชุดทดสอบที่ไม่เคยเห็นตอนเทรน): <!--VOICE_METRICS-->ดู `ai-service/models/voice_metrics.json`<!--/VOICE_METRICS-->
+- **ผลทดสอบ** (ชุดทดสอบที่ไม่เคยเห็นตอนเทรน): 
+
+  | ชุดทดสอบ | จำนวนคลิป | แม่นยำ | AUC | เสียงจริงที่ผ่าน | เสียงปลอมที่จับได้ |
+  |---|---:|---:|---:|---:|---:|
+  | รวม (เสียงชัด) | 1,709 | 98.6% | 0.999 | 98.3% | 98.8% |
+  | รวม (ผ่านช่องสัญญาณโทรศัพท์) | 1,709 | 97.4% | 0.997 | 95.8% | 98.6% |
+  | In-the-Wild (ผู้พูดที่ไม่เคยเห็น) | 1,204 | 98.0% | 0.997 | 97.3% | 98.5% |
+  | ภาษาไทย (ประโยคที่ไม่เคยเห็น) | 505 | 100% | 1.000 | 100% | 100% |
+
+  ข้อมูลเทรน: In-the-Wild 4,000 + 4,000 คลิป · เสียงไทยจริง 1,460 คลิป · เสียงไทยสังเคราะห์ 1,030 คลิป (edge-tts 532, gTTS 498) — ตัวเลขภาษาไทย 100% บอกได้แค่ว่าแยกเสียง TTS ทั่วไปออกจากเสียงคนได้ ยังไม่ใช่หลักฐานว่าจับเสียง clone ภาษาไทยได้
 
 ### ตรวจข้อความหลอกลวงภาษาไทย
 
 - **ข้อมูลเทรน**: ชุดข้อความหลอกลวงกึ่งสังเคราะห์ 13 รูปแบบที่พบบ่อยในไทย (อ้างตำรวจ/DSI, พัสดุตกค้าง, การไฟฟ้า, เงินกู้, งานออนไลน์, ลงทุน, รางวัล ฯลฯ — แนวการแบ่งประเภทอ้างอิงจากงาน [ThaiScamBench (KMITL)](https://dspace.kmitl.ac.th/handle/123456789/20335)) + ข้อความปกติที่ใกล้เคียง (OTP จริงจากธนาคาร, แจ้งพัสดุจริง) + ข้อความทั่วไปจาก [wisesight-sentiment](https://huggingface.co/datasets/pythainlp/wisesight_sentiment)
 - **โมเดล**: TF-IDF ตัวอักษร 2-5 gram + LogisticRegression และกฎสัญญาณเตือน 11 แบบที่อธิบายให้ผู้ใช้เห็นว่าทำไมน่าสงสัย
-- **ผลทดสอบ**: <!--TEXT_METRICS-->ดู `ai-service/models/text_metrics.json`<!--/TEXT_METRICS-->
+- **ผลทดสอบ**: 
+
+  | ชุดทดสอบ | จำนวน | แม่นยำ | precision | recall | AUC |
+  |---|---:|---:|---:|---:|---:|
+  | แม่แบบที่ไม่เคยเห็นตอนเทรน | 2,847 | 98.4% | 97.6% | 97.0% | 0.998 |
+  | ข้อความที่เขียนด้วยมือแยกต่างหาก | 48 | 93.8% | 95.7% | 91.7% | 0.997 |
+
+  เตือนผิดกับข้อความโซเชียลทั่วไปที่ไม่ได้ใช้เทรน (wisesight 3,000 ข้อความ): 0.17% · ข้อมูลเทรน: แม่แบบ 5,516 ข้อความ + wisesight 6,000 ข้อความ (น้ำหนัก 0.3)
 
 ### ข้อจำกัดที่ควรรู้
 
 - เป็นเครื่องมือช่วยตัดสินใจ ไม่ใช่คำตัดสิน — ผล "ไม่พบสัญญาณอันตราย" ไม่ได้แปลว่าปลอดภัย 100%
-- เสียงปลอมภาษาไทยในชุดเทรนมาจาก TTS 3 ตระกูล เสียง clone จากเครื่องมืออื่นอาจหลุดได้ ควรเติมตัวอย่างจริงเมื่อมี
+- เสียงปลอมภาษาไทยในชุดเทรนมาจาก TTS 2 ตระกูล เสียง clone จากเครื่องมืออื่นอาจหลุดได้ ควรเติมตัวอย่างจริงเมื่อมี
 - ข้อความหลอกลวงส่วนใหญ่สร้างจากแม่แบบ ตัวเลข held-out จึงวัดจาก **แม่แบบที่โมเดลไม่เคยเห็น** และชุดข้อความที่เขียนด้วยมือแยกต่างหาก (`training/eval_texts_th.jsonl`)
-- ใบอนุญาตข้อมูล: MMS-TTS เป็น CC-BY-NC 4.0 (ใช้เพื่อการศึกษาได้ ถ้าจะขายจริงให้เทรนใหม่โดยปิด `with_mms`) · In-the-Wild และ FLEURS ใช้เพื่อการวิจัย/การศึกษา
+- ใบอนุญาตข้อมูล: MMS-TTS เป็น CC-BY-NC 4.0 จึงปิดไว้เป็นค่าเริ่มต้น (โมเดลที่ใช้อยู่ไม่ได้เทรนด้วย MMS) · In-the-Wild และ FLEURS ใช้เพื่อการวิจัย/การศึกษา
 
 ### เทรนใหม่
 
@@ -92,7 +108,7 @@ GitHub → Actions → **Train AI models** → Run workflow (ปรับจำ�
 cd ai-service
 pip install -r requirements.txt -r requirements-train.txt
 python -m training.train_text
-python -m training.prepare_voice_data --itw-zip release_in_the_wild.zip --out data/voice --itw-per-class 4000 --thai-fake 1500
+python -m training.prepare_voice_data --itw-zip release_in_the_wild.zip --out data/voice --itw-per-class 4000 --thai-fake 1500   # เพิ่ม --with-mms ได้
 python -m training.train_voice --manifest data/voice/manifest.csv
 ```
 
