@@ -1,0 +1,55 @@
+# สร้างไฟล์เสียงสายตัวอย่างของหน้า "ตรวจระหว่างสาย" แล้ว commit กลับเข้า branch
+# รันเองได้จาก Actions -> Make demo call audio -> Run workflow
+name: Make demo call audio
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+    paths:
+      - "ai-service/training/make_demo_calls.py"
+      - ".github/workflows/demo-audio.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-audio-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ai-service/requirements-train.txt
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libsndfile1
+      - name: Install dependencies
+        run: pip install -r requirements-train.txt
+      - name: Make demo calls and score them with the trained model
+        run: python -m training.make_demo_calls --out ../frontend/audio
+      - name: Summary
+        run: |
+          { echo '## Demo calls'; echo '```json'; cat ../frontend/audio/demo-calls.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          ls -lh ../frontend/audio
+      - name: Commit audio back to the branch
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/audio
+          git diff --cached --quiet && exit 0
+          git commit -m "Demo call audio (run ${{ github.run_number }})"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
