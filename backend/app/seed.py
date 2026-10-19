@@ -48,6 +48,38 @@ def seed_categories(db: Session) -> int:
     return added
 
 
+def _add_premium_demo_extras(db: Session, user: User) -> None:
+    user.premium_until = utcnow() + timedelta(days=30)
+    user.auto_renew = True
+    db.add_all([
+        EmergencyContact(user_id=user.id, name="คุณแม่", phone_number="0815551234"),
+        EmergencyContact(user_id=user.id, name="น้องสาว", phone_number="0897771234"),
+        Payment(user_id=user.id, amount_baht=settings.PREMIUM_PRICE_BAHT, status=PaymentStatus.paid,
+                provider="mock", provider_ref=f"VGSEED{user.id.hex[:8].upper()}", method="promptpay",
+                period_start=utcnow(), period_end=user.premium_until, expires_at=utcnow(), paid_at=utcnow()),
+    ])
+
+
+def ensure_demo_accounts(db: Session) -> list[str]:
+    """เพิ่มบัญชีทดลองที่ยังไม่มี (กรณีฐานข้อมูลเดิมมีผู้ใช้อยู่แล้ว เช่น อัปเกรดจากเวอร์ชันเก่า) ไม่แตะบัญชีอื่น"""
+    existing = set(db.scalars(select(User.username)).all())
+    taken_emails = set(db.scalars(select(User.email)).all())
+    added = []
+    for username, email, pw, name, role in DEMO_USERS:
+        if username in existing:
+            continue
+        if email in taken_emails:
+            email = f"{username}.demo@example.com"
+        u = User(username=username, email=email, hashed_password=hash_password(pw), full_name=name, role=role)
+        db.add(u)
+        db.flush()
+        if username == "demo":
+            _add_premium_demo_extras(db, u)
+        added.append(username)
+    db.commit()
+    return added
+
+
 def seed_demo(db: Session, rng: random.Random | None = None) -> bool:
     if db.scalar(select(func.count()).select_from(User)):
         return False  # มีผู้ใช้แล้ว ไม่ทับข้อมูลจริง
@@ -60,15 +92,7 @@ def seed_demo(db: Session, rng: random.Random | None = None) -> bool:
         users.append(u)
     db.flush()
     officer = users[1]
-    officer.premium_until = utcnow() + timedelta(days=30)
-    officer.auto_renew = True
-    db.add_all([
-        EmergencyContact(user_id=officer.id, name="คุณแม่", phone_number="0815551234"),
-        EmergencyContact(user_id=officer.id, name="น้องสาว", phone_number="0897771234"),
-        Payment(user_id=officer.id, amount_baht=settings.PREMIUM_PRICE_BAHT, status=PaymentStatus.paid,
-                provider="mock", provider_ref="VGSEED0001", method="promptpay", period_start=utcnow(),
-                period_end=officer.premium_until, expires_at=utcnow(), paid_at=utcnow()),
-    ])
+    _add_premium_demo_extras(db, officer)
 
     categories = db.scalars(select(ScamCategory)).all()
     now = utcnow()
@@ -116,7 +140,11 @@ def main() -> None:
         logger.info("scam_categories: added %d", added)
         if settings.SEED_DEMO_DATA:
             created = seed_demo(db)
-            logger.info("demo data: %s", "created" if created else "skipped (users already exist)")
+            if created:
+                logger.info("demo data: created")
+            else:
+                logger.info("demo data: skipped (users already exist); demo accounts added: %s",
+                            ensure_demo_accounts(db) or "none")
         else:
             logger.info("demo data: disabled (SEED_DEMO_DATA=false)")
 
