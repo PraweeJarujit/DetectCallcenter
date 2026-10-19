@@ -1,0 +1,88 @@
+{
+  "model_version": "voice-v1",
+  "algorithm": "hgb",
+  "candidates_test_auc": {
+    "logreg": 0.9951,
+    "hgb": 0.9983
+  },
+  "trained_at": "2026-10-19T15:05:56Z",
+  "n_features": 231,
+  "clips": {
+    "itw": {
+      "real": 4000,
+      "fake": 4000
+    },
+    "thai": {
+      "real": 1460,
+      "fake": 498
+    }
+  },
+  "fake_engines": {
+    "deepfake": 4000,
+    "fleurs": 1460,
+    "gtts": 498,
+    "real": 4000
+  },
+  "split": "In-the-Wild แยกตามผู้พูด / ไทยแยกตามประโยค, test 20%",
+  "test": {
+    "overall_clean": {
+      "n": 1592,
+      "accuracy": 0.9887,
+      "roc_auc": 0.9983,
+      "eer": 0.0113,
+      "real_correct_rate": 0.9883,
+      "fake_caught_rate": 0.9891
+    },
+    "overall_phone_channel": {
+      "n": 1592,
+      "accuracy": 0.9655,
+      "roc_auc": 0.9948,
+      "eer": 0.0321,
+      "real_correct_rate": 0.9466,
+      "fake_caught_rate": 0.983
+    },
+    "by_source": {
+      "itw": {
+        "clean": {
+          "n": 1204,
+          "accuracy": 0.985,
+          "roc_auc": 0.9971,
+          "eer": 0.0149,
+          "real_correct_rate": 0.9811,
+          "fake_caught_rate": 0.9876
+        },
+        "phone_channel": {
+          "n": 1204,
+          "accuracy": 0.9568,
+          "roc_auc": 0.9918,
+          "eer": 0.0378,
+          "real_correct_rate": 0.9202,
+          "fake_caught_rate": 0.9808
+        }
+      },
+      "thai": {
+        "clean": {
+          "n": 388,
+          "accuracy": 1.0,
+          "roc_auc": 1.0,
+          "eer": 0.0,
+          "real_correct_rate": 1.0,
+          "fake_caught_rate": 1.0
+        },
+        "phone_channel": {
+          "n": 388,
+          "accuracy": 0.9923,
+          "roc_auc": 1.0,
+          "eer": 0.0,
+          "real_correct_rate": 0.9897,
+          "fake_caught_rate": 1.0
+        }
+      }
+    },
+    "fake_caught_by_engine": {
+      "deepfake": 0.9876,
+      "gtts": 1.0
+    }
+  },
+  "feature_seconds": 959.8
+}
