@@ -38,9 +38,9 @@ services:
         value: "true"                # demo สำหรับนำเสนอ — ระบบจริงให้ตั้งเป็น false
       - key: WEB_CONCURRENCY
         value: "1"
-      # free plan รับ traffic ผ่าน private network ไม่ได้ จึงเรียก AI ทาง URL สาธารณะ — แก้ให้ตรงกับ URL จริงของ voiceguard-ai
+      # free plan รับ traffic ผ่าน private network ไม่ได้ จึงเรียก AI ทาง URL สาธารณะของ voiceguard-ai
       - key: VOICEGUARD_AI_URL
-        value: https://voiceguard-ai.onrender.com
+        value: https://voiceguard-ai-fx9v.onrender.com
       - key: AI_TIMEOUT_SECONDS
         value: "60"                  # free instance หลับแล้วตื่นช้า ~50 วินาที
       - key: AI_MOCK_FALLBACK
