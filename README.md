@@ -4,8 +4,8 @@
 
 | แพ็กเกจ | ราคา | ได้อะไร |
 |---|---|---|
-| ฟรี | 0 บาท | ตรวจเบอร์วันละ 5 ครั้ง · ดูรายชื่อเบอร์อันตราย · แจ้งเบอร์ |
-| Premium | 59 บาท/เดือน | ตรวจเบอร์ไม่จำกัด · AI ตรวจข้อความหลอกลวง · AI ตรวจเสียงสังเคราะห์ (deepfake) · แจ้งผู้ติดต่อฉุกเฉินเมื่อพบความเสี่ยงสูง · ประวัติการตรวจ |
+| ฟรี | 0 บาท | ตรวจเบอร์วันละ 5 ครั้ง · ทดลองตรวจระหว่างสายวันละ ~1 นาที · ดูรายชื่อเบอร์อันตราย · แจ้งเบอร์ |
+| Premium | 59 บาท/เดือน | **AI ฟังระหว่างสายแบบเรียลไทม์ไม่จำกัด** (เสียง + คำพูด) · ตรวจเบอร์ไม่จำกัด · AI ตรวจข้อความหลอกลวง · AI ตรวจเสียงสังเคราะห์ (deepfake) · แจ้งผู้ติดต่อฉุกเฉินเมื่อพบความเสี่ยงสูง · ประวัติการตรวจ |
 
 > **การชำระเงินเป็นโหมดทดลอง** (`PAYMENT_PROVIDER=mock`) — หน้า checkout แสดง QR พร้อมเพย์จำลองและปุ่ม "จำลองการชำระเงินสำเร็จ" ยังไม่มีการตัดเงินจริง ดูหัวข้อ [ต่อระบบชำระเงินจริง](#ต่อระบบชำระเงินจริง)
 
@@ -34,10 +34,11 @@ ai-service/
 backend/
   alembic/versions/       0001 schema · 0002 index · 0003 subscription + contact
   app/routers/            auth, users, detect, calls, contacts, billing
-  tests/                  pytest 97 tests
+  tests/                  pytest 107 tests
 frontend/
-  index.html              หน้าแรก: ตรวจเบอร์ได้ทันที + ราคา + คำถามที่พบบ่อย + ติดต่อเรา
-  pages/                  login · check · history · numbers · account · admin
+  index.html              หน้าแรก: ตรวจเบอร์ได้ทันที + ตรวจระหว่างสาย + ราคา + คำถามที่พบบ่อย + ติดต่อเรา
+  pages/                  login · check · live (ตรวจระหว่างสาย) · history · numbers · account · admin
+  audio/                  สายตัวอย่าง + คะแนนจริงของโมเดล (demo-calls.json)
   js/                     api.js · ui.js (shell + ไอคอน) · checker.js · history.js
 db-indexing/, indexing-lab/, dashboard/   งานประกอบรายวิชา (index lab, storytelling dashboard)
 ```
@@ -50,10 +51,33 @@ db-indexing/, indexing-lab/, dashboard/   งานประกอบราย�
 |---|---|
 | หน้าแรก `/` | ตรวจเบอร์ได้เลยโดยไม่ต้องสมัคร · ดูแพ็กเกจ · ส่งข้อความติดต่อเรา |
 | ตรวจ `pages/check.html` | ตัวตรวจ 3 แบบ (เบอร์ / ข้อความ / ไฟล์เสียงหรืออัดเสียง) + สรุปสถิติ + ตรวจล่าสุด |
+| ระหว่างสาย `pages/live.html` | AI ฟังสายสด ๆ ทุก 2 วินาที (ไม่ต้อง login ก็ลองสายตัวอย่างได้) — ดูหัวข้อ [ตรวจระหว่างสาย](#ตรวจระหว่างสาย-เรียลไทม์) |
 | ประวัติ `pages/history.html` | ผลตรวจทั้งหมดของตัวเอง กรองตามประเภท |
 | เบอร์อันตราย `pages/numbers.html` | ค้นรายชื่อเบอร์ที่ถูกแจ้ง · ดูรายละเอียด · แจ้งเบอร์ใหม่ |
 | บัญชี `pages/account.html` | สมัคร/ยกเลิก Premium · ประวัติชำระเงิน · ผู้ติดต่อฉุกเฉิน · ข้อมูลส่วนตัว |
 | แอดมิน `pages/admin.html` | ภาพรวมสมาชิกและรายได้ · กล่องข้อความติดต่อเรา · จัดการเบอร์ · สมาชิกล่าสุด |
+
+## ตรวจระหว่างสาย (เรียลไทม์)
+
+จุดขายหลักของ VoiceGuard: เปิดหน้า **ระหว่างสาย** ไว้ขณะคุยโทรศัพท์ แล้ว AI จะฟังและเตือนทันที
+
+| แหล่งเสียง | ใช้กับ | วิธีทำงาน |
+|---|---|---|
+| เปิดลำโพงให้ฟัง | สายโทรศัพท์ทั่วไป (มือถือ/คอม) | ไมโครโฟนรับเสียงจากลำโพง (ปิด noise suppression ของเบราว์เซอร์) + ถอดคำพูดภาษาไทยด้วย Web Speech API (Chrome/Edge) |
+| เสียงจากคอม | LINE / Messenger / Zoom บนคอม | `getDisplayMedia` แชร์หน้าจอพร้อม "เสียงของระบบ" (Chrome/Edge บน Windows) |
+| สายตัวอย่าง | นำเสนอ / ทดลอง | เล่นไฟล์เสียงจริงใน `frontend/audio/` ผ่านระบบเดียวกัน คำบรรยายจากสคริปต์ |
+
+```
+เสียง -> AudioWorklet (js/pcm-capture.js) -> ลดเป็น 16 kHz mono -> ring buffer 4 วินาที
+     -> ทุก 2 วินาที: ช่วงที่มีเสียงพูด >= 20% ส่ง WAV ไป POST /api/live/chunk -> ai-service /analyze
+     -> เกจ = ค่าเฉลี่ยเคลื่อนที่ (EMA) · แถบเส้นเวลา 1 แท่ง/2 วินาที · เตือนเมื่อ EMA >= 0.7 ติดกัน 3 ช่วงขึ้นไป
+คำพูด -> POST /api/live/text (Premium) -> สัญญาณเตือน + ไฮไลต์คำในบทสนทนา
+จบสาย -> POST /api/live/summary -> บันทึกประวัติ 1 แถว + แจ้งผู้ติดต่อฉุกเฉิน (Premium, คะแนน >= 80)
+```
+
+ข้อจำกัด: เว็บดักเสียงจากสายโทรศัพท์มือถือโดยตรงไม่ได้ (iOS/Android ไม่อนุญาต) จึงใช้วิธีเปิดลำโพง ถ้าจะดักสายโดยตรงต้องทำเป็นแอปมือถือ (Android `CallScreeningService` + อัดเสียงผ่านลำโพง หรือ VoIP ของตัวเอง)
+
+สายตัวอย่างสร้างโดย `ai-service/training/make_demo_calls.py` (รันอัตโนมัติท้าย workflow Train AI models): มิจฉาชีพอ้างเป็นตำรวจอ่านด้วย edge-tts และเสียงคนไทยจริงจาก FLEURS split test (ผู้พูดที่โมเดลไม่เคยได้ยิน) ผ่านสายโทรศัพท์จำลองเหมือนกัน คะแนนทีละช่วงของโมเดลจริงเก็บใน `frontend/audio/demo-calls.json` และหน้าแรกวาดกราฟจากไฟล์นี้
 
 ผลตรวจแสดงเป็น "ใบผล" ที่บอกระดับความเสี่ยง เหตุผล (เช่น สัญญาณ "ขอให้โอนเงิน", "อ้างเป็นเจ้าหน้าที่รัฐ" พร้อมคำที่เจอ) และขั้นตอนถัดไป เช่น โทร 1441 หรือแจ้งเบอร์นี้
 
@@ -140,7 +164,7 @@ docker compose ps                         # db / voiceguard-ai / backend / front
 ต้องใช้ Python 3.12
 
 ```bash
-cd backend && pip install -r requirements-dev.txt && pytest          # 97 tests, coverage ≥ 70% (ได้ ~98%)
+cd backend && pip install -r requirements-dev.txt && pytest          # 107 tests, coverage ≥ 70% (ได้ ~98%)
 cd ai-service && pip install -r requirements-dev.txt && pytest       # 14 tests, coverage ≥ 80% (ได้ ~93%)
 ```
 
@@ -148,6 +172,7 @@ backend test ใช้ SQLite ชั่วคราวเป็นค่าเ�
 
 | ไฟล์ test | ทดสอบอะไร |
 |---|---|
+| `test_live.py` | โควตาทดลองฟรี (ตาม IP / บัญชี), Premium ไม่จำกัด, AI ล่มไม่หักสิทธิ์, คำพูด (Premium, ไม่บันทึก), สรุปผล + แจ้งผู้ติดต่อ |
 | `test_billing.py` | แพ็กเกจ, checkout, ยืนยันชำระเงินจำลอง, ต่ออายุ, หมดเวลา, ยกเลิก, ติดต่อเรา, หน้าแอดมิน |
 | `test_detect.py` | โควตาตรวจเบอร์ฟรี, ข้อความ/เสียงต้องเป็น Premium (402), AI ล่ม (503), แจ้งผู้ติดต่อฉุกเฉิน, blacklist CRUD |
 | `test_auth.py` · `test_users.py` | สมัคร, login, rate limit, logout revoke token, สิทธิ์ member/admin |
@@ -172,6 +197,8 @@ backend test ใช้ SQLite ชั่วคราวเป็นค่าเ�
 | POST | `/api/detect/number` | - | ไม่ login = วันละ 5 ครั้งต่อ IP · ฟรี = วันละ 5 ครั้ง · Premium ไม่จำกัด (เกิน → 429 `QUOTA_EXCEEDED`) |
 | POST | `/api/detect/text` | Premium | AI ข้อความ + สัญญาณเตือน |
 | POST | `/api/detect/audio` | Premium | AI เสียง (wav/mp3/m4a/ogg/webm ≤ 10 MB) |
+| POST | `/api/live/chunk` · GET `/api/live/quota` | - | ตรวจระหว่างสาย ช่วงละ ~4 วินาที · ฟรีวันละ 30 ช่วง Premium ไม่จำกัด |
+| POST | `/api/live/text` · `/api/live/summary` | Premium / - | คำพูดระหว่างสาย (ไม่บันทึกทุกครั้ง) · สรุปผลตอนจบสาย |
 | GET | `/api/billing/plans` · `/api/billing/me` · `/api/billing/payments` | - / login / login | |
 | POST | `/api/billing/checkout` · `/api/billing/checkout/{id}/confirm` · `/api/billing/cancel` | login | confirm ใช้ได้เฉพาะโหมด mock |
 | GET | `/api/me/summary` · `/api/ai/status` | login / - | สถิติของฉัน · สถานะและความแม่นยำของโมเดล |
