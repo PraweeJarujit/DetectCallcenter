@@ -76,10 +76,12 @@ def plans() -> list[PlanOut]:
     return [
         PlanOut(code="free", name="ฟรี", price_baht=0, period="ตลอดไป", features=[
             f"ตรวจเบอร์โทรกับฐานข้อมูลเบอร์มิจฉาชีพ {free} ครั้งต่อวัน",
+            f"ทดลองให้ AI ฟังระหว่างสายฟรีวันละ {settings.LIVE_FREE_CHUNKS_PER_DAY * 2} วินาที",
             "ค้นหาและดูรายชื่อเบอร์ที่ถูกแจ้ง",
             "แจ้งเบอร์มิจฉาชีพให้คนอื่นรู้",
         ]),
         PlanOut(code="premium", name="Premium", price_baht=settings.PREMIUM_PRICE_BAHT, period="ต่อเดือน", features=[
+            "AI ฟังระหว่างสายแบบเรียลไทม์ไม่จำกัด เตือนทันทีเมื่อเป็นเสียง AI หรือพูดเข้าข่ายหลอกลวง",
             "ตรวจเบอร์โทรได้ไม่จำกัด",
             "AI ตรวจไฟล์เสียงว่าเป็นเสียงสังเคราะห์หรือไม่",
             "AI ตรวจข้อความ SMS / LINE ว่าเข้าข่ายหลอกลวงไหม",

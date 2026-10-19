@@ -41,6 +41,7 @@ function brandMark() {
 
 const APP_NAV = [
   { href: "check.html", key: "check", label: "ตรวจ", icon: "shield" },
+  { href: "live.html", key: "live", label: "ระหว่างสาย", icon: "wave" },
   { href: "history.html", key: "history", label: "ประวัติ", icon: "history" },
   { href: "numbers.html", key: "numbers", label: "เบอร์อันตราย", icon: "list" },
   { href: "account.html", key: "account", label: "บัญชี", icon: "user" },
