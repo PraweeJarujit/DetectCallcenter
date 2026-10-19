@@ -2,7 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
   "redirects": [
-    { "source": "/", "destination": "/pages/login.html", "permanent": false }
+    { "source": "/pages/dashboard.html", "destination": "/pages/check.html", "permanent": true },
+    { "source": "/pages/settings.html", "destination": "/pages/account.html", "permanent": true },
+    { "source": "/pages/blacklist.html", "destination": "/pages/numbers.html", "permanent": true },
+    { "source": "/pages/call-demo.html", "destination": "/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://voiceguard-api-dz1i.onrender.com/api/:path*" }

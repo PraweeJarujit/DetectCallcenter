@@ -12,7 +12,14 @@
 const API_BASE = window.VG_API_BASE || "/api";
 const TOKEN_KEY = "vg_token";
 const USER_KEY = "vg_user";
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 45000; // วิเคราะห์ไฟล์เสียงยาว ๆ อาจใช้เวลาหลายวินาที
+
+/* หน้าแรก (index.html) อยู่ที่ราก ส่วนหน้าแอปอยู่ใน pages/ -> สร้างลิงก์ให้ถูกไม่ว่าจะอยู่หน้าไหน */
+const IN_PAGES = location.pathname.includes("/pages/");
+function pageUrl(name) {
+  if (name === "index.html") return IN_PAGES ? "../index.html" : "index.html";
+  return IN_PAGES ? name : `pages/${name}`;
+}
 
 class ApiError extends Error {
   constructor(status, code, message, details, requestId) {
@@ -65,7 +72,7 @@ function requireLogin() {
   const user = getCurrentUser();
   if (!user || !getToken()) {
     const next = encodeURIComponent(location.pathname.split("/").pop() + location.search);
-    window.location.href = `login.html?next=${next}`;
+    window.location.href = pageUrl(`login.html?next=${next}`);
     return null;
   }
   return user;
@@ -78,7 +85,7 @@ async function logout() {
     /* token หมดอายุแล้วก็ไม่เป็นไร */
   }
   clearSession();
-  window.location.href = "login.html";
+  window.location.href = pageUrl("index.html");
 }
 
 /* ---------------- core request ---------------- */
@@ -126,7 +133,7 @@ async function apiRequest(method, path, body, options = {}) {
     if (res.status === 401 && auth && token && redirectOn401) {
       clearSession();
       showToast("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่");
-      setTimeout(() => (window.location.href = "login.html"), 900);
+      setTimeout(() => (window.location.href = pageUrl("login.html")), 900);
     }
     throw apiErr;
   }
@@ -177,19 +184,19 @@ function showToast(message, duration = 2600, type = "info") {
 }
 
 function showError(err) {
-  showToast("⚠️ " + errorMessage(err), 3600, "error");
+  showToast(errorMessage(err), 4200, "error");
 }
 
 /* ปุ่มที่กำลังรอ API: disable + เปลี่ยนข้อความ กันกดซ้ำ */
 async function withLoading(button, task, loadingText = "กำลังดำเนินการ...") {
-  const original = button.textContent;
+  const original = button.innerHTML;
   button.disabled = true;
   button.textContent = loadingText;
   try {
     return await task();
   } finally {
     button.disabled = false;
-    button.textContent = original;
+    button.innerHTML = original;
   }
 }
 
@@ -203,21 +210,4 @@ function formatPhone(phone) {
 function formatDateTime(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
-}
-
-/* แสดงชื่อผู้ใช้ + role ใน sidebar และผูกปุ่ม logout (ใช้ร่วมทุกหน้าที่มี sidebar) */
-function renderUserChip() {
-  const chip = document.getElementById("role-chip");
-  const user = getCurrentUser();
-  if (chip) {
-    chip.textContent = user
-      ? `👤 ${user.username} · ${user.role_label || user.role}`
-      : "👤 โหมดผู้เยี่ยมชม (Guest)";
-  }
-  document.querySelectorAll("[data-logout]").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      logout();
-    }),
-  );
 }

@@ -96,10 +96,13 @@ def seed_demo(db: Session, rng: random.Random | None = None) -> bool:
             score = rng.choices([rng.randint(0, 49), rng.randint(50, 79), rng.randint(80, 99)], [6, 2, 2])[0]
             phone = rng.choice(numbers).phone_number if score >= 50 and rng.random() < 0.5 \
                 else f"08{rng.randint(10_000_000, 99_999_999)}"
+            source = rng.choice([CallSource.number_check, CallSource.audio, CallSource.text])
             db.add(CallLog(
                 phone_number=phone, user_id=rng.choice([None, officer.id]), risk_score=score,
-                status=status_from_score(score), is_synthetic_voice=score >= 80 and rng.random() < 0.7,
-                source=rng.choice([CallSource.number_check, CallSource.audio, CallSource.text]),
+                status=status_from_score(score),
+                # "เสียงสังเคราะห์" มีความหมายเฉพาะผลตรวจไฟล์เสียง
+                is_synthetic_voice=source == CallSource.audio and score >= 80 and rng.random() < 0.7,
+                source=source,
                 created_at=now - timedelta(days=day, minutes=rng.randint(0, 60 * 20)),
             ))
     db.commit()

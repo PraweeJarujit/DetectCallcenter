@@ -48,22 +48,26 @@ def test_trend_has_7_days_and_counts_high_risk_only(client, db, user_headers):
     assert all(p["day"] in ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."] for p in trend)
 
 
-def test_logs_keyset_pagination(client, db, user, user_headers):
+def test_logs_keyset_pagination(client, db, user, user_headers, admin_headers):
     now = utcnow()
     for i in range(5):
         _log(db, 10 * i, now - timedelta(minutes=i), user=user if i % 2 == 0 else None)
     db.commit()
-    page1 = client.get("/api/calls/logs?limit=2", headers=user_headers).json()
+    # admin เห็นทั้งระบบ (5 แถว)
+    user_headers_all = admin_headers
+    page1 = client.get("/api/calls/logs?limit=2", headers=user_headers_all).json()
     assert page1["total"] is None and len(page1["items"]) == 2
     assert page1["items"][0]["risk_score"] == 0  # ใหม่สุด
-    page2 = client.get(f"/api/calls/logs?limit=2&before_id={page1['next_before_id']}", headers=user_headers).json()
-    page3 = client.get(f"/api/calls/logs?limit=2&before_id={page2['next_before_id']}", headers=user_headers).json()
+    page2 = client.get(f"/api/calls/logs?limit=2&before_id={page1['next_before_id']}", headers=user_headers_all).json()
+    page3 = client.get(f"/api/calls/logs?limit=2&before_id={page2['next_before_id']}", headers=user_headers_all).json()
     seen = [i["id"] for p in (page1, page2, page3) for i in p["items"]]
     assert len(seen) == len(set(seen)) == 5
     assert page3["next_before_id"] is None
 
     mine = client.get("/api/calls/logs?mine=true", headers=user_headers).json()
     assert len(mine["items"]) == 3
+    # สมาชิกทั่วไปขอดูทั้งระบบ -> ได้เฉพาะของตัวเองเสมอ
+    assert len(client.get("/api/calls/logs", headers=user_headers).json()["items"]) == 3
     assert client.get("/api/calls/logs?before_id=999999", headers=user_headers).status_code == 404
 
 

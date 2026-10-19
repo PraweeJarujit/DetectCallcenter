@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<title>ประวัติการตรวจ | VoiceGuard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header id="shell"></header>
+<main class="page">
+  <div class="container" style="max-width:820px">
+    <div class="page-head">
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">ประวัติการตรวจ</h1>
+      <p class="muted">ทุกครั้งที่คุณตรวจเบอร์ ข้อความ หรือเสียง เก็บเฉพาะผลตรวจ ไม่เก็บตัวข้อความหรือไฟล์เสียง</p>
+    </div>
+    <section class="panel">
+      <div class="toolbar">
+        <div class="chips" role="group" aria-label="กรองตามประเภท">
+          <button class="chip" data-filter="" aria-pressed="true">ทั้งหมด</button>
+          <button class="chip" data-filter="number_check" aria-pressed="false">เบอร์</button>
+          <button class="chip" data-filter="text" aria-pressed="false">ข้อความ</button>
+          <button class="chip" data-filter="audio" aria-pressed="false">เสียง</button>
+        </div>
+      </div>
+      <ul class="list" id="rows"><li><div class="skeleton" style="width:100%"></div></li></ul>
+      <div class="pager"><button class="btn btn-ghost" id="more" hidden>โหลดเพิ่ม</button></div>
+    </section>
+  </div>
+</main>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/history.js"></script>
+<script>
+if (requireLogin()) {
+  mountShell("history");
+  let items = [];
+  let cursor = null;
+  let filter = "";
+  const rows = document.getElementById("rows");
+  const more = document.getElementById("more");
+
+  function render() {
+    const shown = filter ? items.filter((i) => i.source === filter) : items;
+    rows.innerHTML = shown.length ? shown.map(historyRow).join("")
+      : `<li style="display:block">${emptyState("history", items.length ? "ไม่มีรายการประเภทนี้ในช่วงที่โหลดมา" : "ยังไม่มีการตรวจ", `<a class="btn btn-primary" href="check.html">เริ่มตรวจ</a>`)}</li>`;
+    more.hidden = !cursor;
+  }
+  async function load() {
+    try {
+      const q = cursor ? `&before_id=${cursor}` : "";
+      const data = await apiGet(`/calls/logs?mine=true&limit=30${q}`);
+      items = items.concat(data.items);
+      cursor = data.next_before_id;
+      render();
+    } catch (e) { showError(e); }
+  }
+  more.addEventListener("click", () => withLoading(more, load, "กำลังโหลด..."));
+  document.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+  load();
+}
+</script>
+</body>
+</html>

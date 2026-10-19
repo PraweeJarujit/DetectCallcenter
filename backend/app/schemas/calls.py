@@ -19,7 +19,7 @@ class CallLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    phone_number: str
+    phone_number: str | None
     risk_score: int
     status: NumberStatus
     status_label: str

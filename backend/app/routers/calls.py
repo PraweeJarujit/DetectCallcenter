@@ -20,7 +20,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.models.blacklist_number import HIGH_RISK_THRESHOLD, status_from_score
 from app.models.call_log import CallLog
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.calls import (
     CallCreate,
     CallLogOut,
@@ -95,6 +95,9 @@ def list_call_logs(
     และไม่ COUNT(*) ทั้งตาราง (total = None) เพราะ call_logs โตเป็นล้านแถว
     """
     query = select(CallLog)
+    # สมาชิกทั่วไปเห็นเฉพาะประวัติของตัวเอง (ความเป็นส่วนตัว) — admin ดูภาพรวมทั้งระบบได้
+    if current_user.role != UserRole.admin:
+        mine = True
     if mine:
         query = query.where(CallLog.user_id == current_user.id)  # ใช้ IDX-8
     if before_id is not None:
