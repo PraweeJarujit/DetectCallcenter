@@ -1,5 +1,5 @@
 -- =====================================================================
--- ข้อมูลจำลองขนาด production ของ VoiceGuard (ทั้ง 2 database ได้ข้อมูลเหมือนกันทุก row: setseed)
+-- ข้อมูลจำลองขนาด production ของ AwayCall (ทั้ง 2 database ได้ข้อมูลเหมือนกันทุก row: setseed)
 --   users                1,000
 --   blacklist_numbers  200,000
 --   reports            600,000   (+ report_categories ~900,000)
@@ -7,7 +7,7 @@
 --   emergency_contacts   2,000 / token_blacklist 50,000
 -- "วันนี้" ของ lab = 2026-10-02 (Asia/Bangkok) — ทุก query ใน labs/ อ้างวันนี้
 -- =====================================================================
-\echo '>>> Seeding VoiceGuard data ... (ประมาณ 1-3 นาที)'
+\echo '>>> Seeding AwayCall data ... (ประมาณ 1-3 นาที)'
 SET client_min_messages = warning;
 SELECT setseed(0.42) \gset
 

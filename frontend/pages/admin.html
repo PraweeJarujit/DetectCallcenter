@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<title>แอดมิน | VoiceGuard</title>
+<title>แอดมิน | AwayCall</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -90,7 +90,7 @@ if (me && me.role === "admin") {
           <p style="margin-top:6px;white-space:pre-wrap">${escapeHtml(m.message)}</p>
         </div>
         <div class="row" style="flex-wrap:nowrap">
-          <a class="btn btn-ghost btn-sm" href="mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent("ตอบกลับจาก VoiceGuard")}">ตอบอีเมล</a>
+          <a class="btn btn-ghost btn-sm" href="mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent("ตอบกลับจาก AwayCall")}">ตอบอีเมล</a>
           <button class="btn btn-sm ${m.status === "new" ? "btn-primary" : "btn-ghost"}" data-mark="${m.id}" data-to="${m.status === "new" ? "handled" : "new"}">
             ${m.status === "new" ? "ทำเครื่องหมายว่าตอบแล้ว" : "ย้ายกลับไปยังไม่ตอบ"}</button>
         </div>

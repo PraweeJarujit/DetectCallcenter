@@ -1,7 +1,7 @@
-# VoiceGuard Threat Report: Storytelling Dashboard
+# AwayCall Threat Report: Storytelling Dashboard
 
 > **มิจฉาชีพโทรมาบ่อยขึ้น และสายอันตรายครึ่งหนึ่งที่เราตรวจเสียงคือเสียง AI**
-> Dashboard เชิงเล่าเรื่อง (data storytelling) ของระบบ **VoiceGuard AI** สำหรับพันธมิตรธนาคาร ผู้ให้บริการโทรคมนาคม (Telco) และหน่วยงานรัฐ
+> Dashboard เชิงเล่าเรื่อง (data storytelling) ของระบบ **AwayCall** สำหรับพันธมิตรธนาคาร ผู้ให้บริการโทรคมนาคม (Telco) และหน่วยงานรัฐ
 > สรุปสิ่งที่ระบบตรวจพบตลอด 6 เดือน (1 เม.ย. – 30 ก.ย. 2026) และสิ่งที่แต่ละฝ่ายควรทำต่อ
 
 ![ภาพตัวอย่าง dashboard (เดสก์ท็อป)](docs/preview-desktop.png)
@@ -11,7 +11,7 @@
 | **เปิดดูออนไลน์** | https://praweejarujit.github.io/DetectCallcenter/ (ใช้ได้หลังเปิด GitHub Pages ตาม[หัวข้อที่ 9](#9-การเผยแพร่บน-github-pages)) |
 | **เปิดในเครื่อง** | ดับเบิลคลิก [`index.html`](index.html) (ไฟล์เดียว ไม่ต้องติดตั้งหรือรันเซิร์ฟเวอร์) |
 | **ภาพทั้งหน้า** | [`docs/full-page.png`](docs/full-page.png) · มือถือโหมดมืด [`docs/preview-mobile-dark.png`](docs/preview-mobile-dark.png) |
-| **ส่วนหนึ่งของ** | โปรเจกต์ [DetectCallcenter / VoiceGuard AI](../README.md) (BUU) |
+| **ส่วนหนึ่งของ** | โปรเจกต์ [DetectCallcenter / AwayCall](../README.md) (BUU) |
 
 ---
 
@@ -402,4 +402,4 @@ dashboard/
 
 ---
 
-VoiceGuard AI · *Hear the truth. Stay protected.* · โครงงานมหาวิทยาลัยบูรพา
+AwayCall · *Hear the truth. Stay protected.* · โครงงานมหาวิทยาลัยบูรพา

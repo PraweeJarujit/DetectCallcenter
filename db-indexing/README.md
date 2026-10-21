@@ -1,4 +1,4 @@
-# DB Indexing — นำ Indexing Lab มาใช้กับ DetectCallcenter (VoiceGuard)
+# DB Indexing — นำ Indexing Lab มาใช้กับ DetectCallcenter (AwayCall)
 
 ต่อยอดจาก `indexing-lab/` (ตาราง `transactions` ตัวอย่าง) มาใช้กับ **schema จริงของโปรเจกต์**:
 ออกแบบ index จาก query ที่ API ใช้จริง → ใส่ใน SQLAlchemy model + Alembic migration → พิสูจน์ด้วย `EXPLAIN ANALYZE` บนข้อมูลขนาด production

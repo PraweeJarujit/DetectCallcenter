@@ -1,5 +1,5 @@
 """
-VoiceGuard AI — สร้างชุดข้อมูลจำลอง (simulated) สำหรับ Storytelling Dashboard
+AwayCall — สร้างชุดข้อมูลจำลอง (simulated) สำหรับ Storytelling Dashboard
 
     python dashboard/scripts/generate_data.py
 

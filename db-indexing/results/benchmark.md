@@ -1,4 +1,4 @@
-# ผล Benchmark: query จริงของ VoiceGuard API — มี index vs ไม่มี index
+# ผล Benchmark: query จริงของ AwayCall API — มี index vs ไม่มี index
 
 - วันที่วัด: 2026-10-02 23:05  |  PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
 - ข้อมูล: call_logs 2,000,000 · reports 600,000 · report_categories ~860,000 · blacklist_numbers 200,000 · users 1,000

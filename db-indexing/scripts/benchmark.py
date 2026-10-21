@@ -144,7 +144,7 @@ def main():
               file=sys.stderr)
 
     lines = [
-        "# ผล Benchmark: query จริงของ VoiceGuard API — มี index vs ไม่มี index",
+        "# ผล Benchmark: query จริงของ AwayCall API — มี index vs ไม่มี index",
         "",
         f"- วันที่วัด: {datetime.now():%Y-%m-%d %H:%M}  |  {version}",
         "- ข้อมูล: call_logs 2,000,000 · reports 600,000 · report_categories ~860,000 · "

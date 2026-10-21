@@ -3,15 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เข้าสู่ระบบ | VoiceGuard</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>เข้าสู่ระบบ | AwayCall</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 <main class="auth">
+  <aside class="auth-aside">
+    <a class="brand" href="../index.html" id="brand-aside"></a>
+    <div>
+      <span class="eyebrow light">AwayCall</span>
+      <h2>รับสายอย่างมั่นใจ ให้ AI ฟังก่อนคุณเชื่อ</h2>
+      <p>ตรวจเบอร์ ข้อความ และเสียงที่สงสัย ฟังสายสด ๆ ระหว่างคุย และแจ้งเตือนคนในครอบครัวเมื่อพบความเสี่ยงสูง</p>
+      <ul class="hero-points" id="aside-points"></ul>
+    </div>
+    <a class="announce" href="demo.html" style="margin-top:0"><span class="tag">เดโม</span><span class="t">ลองรับสายมิจฉาชีพจำลองบนโทรศัพท์</span><span class="go" id="aside-go"></span></a>
+  </aside>
+  <div class="auth-main">
   <div class="auth-card">
     <a class="brand" href="../index.html" id="brand"></a>
     <h1 style="font-size:1.8rem" id="title">เข้าสู่ระบบ</h1>
@@ -54,12 +65,17 @@
       <button type="button" data-demo="admin">admin</button>
     </p>
   </div>
+  </div>
 </main>
 
 <script src="../js/api.js"></script>
 <script src="../js/ui.js"></script>
 <script>
-document.getElementById("brand").innerHTML = brandMark() + "<span>VoiceGuard</span>";
+document.getElementById("brand").innerHTML = brandHtml();
+document.getElementById("brand-aside").innerHTML = brandHtml();
+document.getElementById("aside-go").innerHTML = icon("arrow");
+document.getElementById("aside-points").innerHTML = ["ตรวจเบอร์ฟรีวันละ 5 ครั้ง", "AI ตรวจข้อความและเสียงสังเคราะห์ (Premium)", "ไม่เก็บไฟล์เสียงหรือข้อความของคุณ"]
+  .map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
 const params = new URLSearchParams(location.search);
 const next = params.get("next");
 let mode = params.get("mode") === "register" ? "register" : "login";

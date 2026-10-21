@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<title>ตรวจระหว่างสาย | VoiceGuard</title>
+<title>ตรวจระหว่างสาย | AwayCall</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -24,6 +24,10 @@
         <div class="checker-body" id="lv-body"></div>
       </section>
       <aside class="stack" style="--gap:20px">
+        <a class="panel live-link dark" href="demo.html">
+          <span class="kind" aria-hidden="true"><i data-icon="presentation"></i></span>
+          <span class="grow"><strong>เดโมโทรศัพท์</strong><span class="muted small">จำลองการรับสายบนมือถือ ฟังเสียงจริง แล้วดู AwayCall เตือนเต็มจอ</span></span>
+        </a>
         <section class="panel">
           <h3>AI ฟังอะไร</h3>
           <ul class="facts-list">
@@ -48,14 +52,8 @@
 if (getToken() && getCurrentUser()) {
   mountShell("live");
 } else {
-  const header = document.getElementById("shell");
-  header.className = "topbar";
-  header.innerHTML = `<div class="container">
-      <a class="brand" href="../index.html">${brandMark()}<span>VoiceGuard</span></a>
-      <div class="topbar-end">
-        <a class="btn btn-ghost btn-sm" href="login.html?next=live.html">เข้าสู่ระบบ</a>
-        <a class="btn btn-primary btn-sm" href="login.html?mode=register&next=live.html">สมัครฟรี</a>
-      </div></div>`;
+  mountSiteHeader({ next: "live.html" });
+  document.body.classList.add("tint");
 }
 document.querySelectorAll("[data-icon]").forEach((el) => { el.outerHTML = icon(el.dataset.icon); });
 mountLive();

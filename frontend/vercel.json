@@ -5,7 +5,7 @@
     { "source": "/pages/dashboard.html", "destination": "/pages/check.html", "permanent": true },
     { "source": "/pages/settings.html", "destination": "/pages/account.html", "permanent": true },
     { "source": "/pages/blacklist.html", "destination": "/pages/numbers.html", "permanent": true },
-    { "source": "/pages/call-demo.html", "destination": "/", "permanent": true }
+    { "source": "/pages/call-demo.html", "destination": "/pages/demo.html", "permanent": true }
   ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://voiceguard-api-dz1i.onrender.com/api/:path*" }
