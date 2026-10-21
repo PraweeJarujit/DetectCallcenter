@@ -1,4 +1,4 @@
--- โหลดข้อมูลจำลองของ dashboard เข้า PostgreSQL ของ VoiceGuard (schema จาก Alembic 0001/0002)
+-- โหลดข้อมูลจำลองของ dashboard เข้า PostgreSQL ของ AwayCall (schema จาก Alembic 0001/0002)
 -- ใช้กับฐานข้อมูล "ว่าง" ที่รัน `alembic upgrade head` แล้วเท่านั้น (คำสั่งนี้ลบข้อมูลเดิมในตารางเหล่านี้!)
 --
 --   cd DetectCallcenter

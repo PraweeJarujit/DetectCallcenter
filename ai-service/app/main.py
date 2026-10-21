@@ -1,5 +1,5 @@
 """
-VoiceGuard AI service — บริการโมเดล AI แยกจาก backend หลัก
+AwayCall AI service — บริการโมเดล AI แยกจาก backend หลัก
 
   POST /analyze        ไฟล์เสียง -> ความน่าจะเป็นที่เป็นเสียงสังเคราะห์ (AI / deepfake)
   POST /analyze-text   ข้อความ SMS / LINE / คำพูดในสาย -> ความน่าจะเป็นที่เป็นการหลอกลวง + สัญญาณเตือน
@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO)
 MODEL_DIR = Path(os.getenv("MODEL_DIR", Path(__file__).resolve().parents[1] / "models"))
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 
-app = FastAPI(title="VoiceGuard AI service", version="1.0.0")
+app = FastAPI(title="AwayCall AI service", version="1.0.0")
 
 
 @lru_cache(maxsize=1)

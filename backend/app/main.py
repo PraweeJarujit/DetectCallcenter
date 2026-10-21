@@ -25,7 +25,7 @@ logger = logging.getLogger("app")
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="2.0.0",
-    description="VoiceGuard AI — API ตรวจจับแก๊งคอลเซ็นเตอร์ (FastAPI + PostgreSQL)",
+    description="AwayCall — API ตรวจจับแก๊งคอลเซ็นเตอร์ (FastAPI + PostgreSQL)",
 )
 
 app.add_middleware(SecurityHeadersMiddleware)

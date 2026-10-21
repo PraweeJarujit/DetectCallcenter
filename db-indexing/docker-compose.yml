@@ -1,4 +1,4 @@
-# DB Indexing Lab สำหรับ DetectCallcenter (VoiceGuard) — ใช้ schema จริงของโปรเจกต์
+# DB Indexing Lab สำหรับ DetectCallcenter (AwayCall) — ใช้ schema จริงของโปรเจกต์
 # PostgreSQL 2 ตัว ข้อมูลเหมือนกันทุกแถว ต่างกันแค่ "index เพื่อ performance" (Alembic migration 0002)
 #   pg_app_with_index : port 5442  (มี IDX-2 ถึง IDX-9)
 #   pg_app_no_index   : port 5443  (มีแค่ PK / UNIQUE / FK)

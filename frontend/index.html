@@ -3,98 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceGuard — ตรวจเบอร์ ข้อความ และเสียงมิจฉาชีพ</title>
-<meta name="description" content="ตรวจเบอร์โทร ข้อความ SMS/LINE และไฟล์เสียงก่อนเชื่อ ด้วยฐานข้อมูลเบอร์มิจฉาชีพและ AI ตรวจเสียงสังเคราะห์ ใช้ฟรี หรือ Premium 59 บาท/เดือน">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='6' fill='%230e7c5a'/%3E%3Cpath d='M7.5 10v4M10.5 7.5v9M13.5 9.5v5' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>AwayCall — รับสายอย่างมั่นใจ ให้ AI ฟังก่อนคุณเชื่อ</title>
+<meta name="description" content="AwayCall ตรวจเบอร์โทร ข้อความ SMS/LINE และเสียงก่อนเชื่อ ให้ AI ฟังสายระหว่างคุยและเตือนทันทีเมื่อเข้าข่ายแก๊งคอลเซ็นเตอร์ ใช้ฟรี หรือ Premium 59 บาท/เดือน">
+<meta name="theme-color" content="#0b1228">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<header class="topbar">
-  <div class="container">
-    <a class="brand" href="index.html" id="brand"></a>
-    <nav class="nav hide-mobile" aria-label="หน้าแรก">
-      <a href="#live">ตรวจระหว่างสาย</a>
-      <a href="#how">ตรวจอะไรได้บ้าง</a>
-      <a href="#pricing">ราคา</a>
-      <a href="#contact">ติดต่อเรา</a>
-    </nav>
-    <div class="topbar-end" id="auth-links">
-      <a class="btn btn-ghost btn-sm" href="pages/login.html">เข้าสู่ระบบ</a>
-      <a class="btn btn-primary btn-sm" href="pages/login.html?mode=register">สมัครฟรี</a>
-    </div>
-  </div>
-</header>
+<header id="shell"></header>
 
 <main>
+  <!-- ================= HERO ================= -->
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <h1>ได้รับสายหรือข้อความแปลก ๆ ตรวจก่อนเชื่อ</h1>
-        <p class="hero-lede">ใส่เบอร์ วางข้อความ หรืออัปโหลดเสียงที่สงสัย แล้วรู้ผลภายในไม่กี่วินาทีว่าอันตรายแค่ไหน และควรทำอะไรต่อ</p>
-      </div>
-      <div class="hero-extra">
-        <ul class="hero-points" id="hero-points"></ul>
-        <div class="hotline">
-          <span class="muted small">โดนหลอกโอนเงินไปแล้ว<br>โทรอายัดบัญชีได้ 24 ชั่วโมง</span>
-          <a href="tel:1441"><strong>1441</strong></a>
+        <span class="eyebrow light">ป้องกันแก๊งคอลเซ็นเตอร์ด้วย AI</span>
+        <h1 style="max-width:15ch">รับสายอย่าง<em>มั่นใจ</em> ให้ AI ฟังก่อนคุณเชื่อ</h1>
+        <p class="hero-lede">AwayCall ตรวจเบอร์ ข้อความ และเสียงที่สงสัย และฟังสายสด ๆ ระหว่างที่คุณคุย ถ้าปลายสายใช้เสียง AI หรือพูดเข้าข่ายหลอกลวง จะเตือนทันทีพร้อมบอกว่าควรทำอะไรต่อ</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#checker">ตรวจเบอร์ฟรี <svg class="icon arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-light btn-lg" href="pages/demo.html" data-icon-before="play">ดูเดโมสายจริง</a>
+        </div>
+        <a class="announce" href="pages/demo.html">
+          <span class="tag">ใหม่</span>
+          <span class="t">เดโมโทรศัพท์: กดรับสายมิจฉาชีพที่ใช้เสียง AI แล้วดูผลประเมินสด</span>
+          <span class="go" data-icon="arrow"></span>
+        </a>
+        <div class="hero-trust">
+          <span data-icon-before="check">ไม่ต้องติดตั้งแอป</span>
+          <span data-icon-before="check">ไม่เก็บไฟล์เสียง</span>
+          <span data-icon-before="check">ตรวจเบอร์ฟรี ไม่ต้องสมัคร</span>
         </div>
       </div>
-      <div id="checker" class="hero-checker"></div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-island"></div>
+            <div class="phone-status"><span>09:41</span><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i><span class="batt"></span></span></div>
+            <div class="pscreen active wall-call">
+              <div class="aw-live danger"><span class="logo" data-glyph></span><span class="txt"><b>AwayCall: ระวังสายนี้</b>เสียงสังเคราะห์ + คำพูดเข้าข่ายหลอกลวง</span><span class="score">98</span></div>
+              <div class="caller-name" style="margin-top:26%">02-115-3790</div>
+              <div class="in-call-timer">00:24</div>
+              <canvas class="wave-canvas" id="hero-wave" width="300" height="60"></canvas>
+              <div class="caption">…ห้ามวางสาย และ<mark>ห้ามเล่าเรื่องนี้ให้ใครฟัง</mark>เด็ดขาด…</div>
+              <div class="keypad">
+                <span class="key"><span class="kc" data-icon="micoff"></span>ปิดเสียง</span>
+                <span class="key"><span class="kc" data-icon="keypad"></span>ปุ่มกด</span>
+                <span class="key on"><span class="kc" data-icon="speaker"></span>ลำโพง</span>
+              </div>
+              <div class="call-actions" style="justify-content:center"><span class="call-btn"><span class="cb decline" data-icon="phone"></span></span></div>
+            </div>
+            <div class="home-bar"></div>
+          </div>
+        </div>
+        <div class="float-card fc-1"><span class="fi" data-icon="wave"></span><div><strong>AwayCall กำลังฟัง</strong>ตรวจเสียงทุก 2 วินาที<div class="bars"><i style="height:40%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:95%"></i><i style="height:70%"></i><i style="height:90%"></i><i style="height:55%"></i><i style="height:85%"></i></div></div></div>
+        <div class="float-card fc-2"><span class="fi" data-icon="alert"></span><div><strong>พบคำพูดเสี่ยง</strong>อ้างเป็นตำรวจ · ขอให้โอนเงิน · ห้ามบอกใคร</div></div>
+        <div class="float-card fc-3"><span class="fi" data-icon="users"></span><div><strong>แจ้งลูกหลานแล้ว</strong>ผู้ติดต่อฉุกเฉินได้รับคำเตือน (Premium)</div></div>
+      </div>
     </div>
   </section>
 
-  <section class="section" id="live">
-    <div class="container live-feature">
-      <div>
-        <div class="section-head" style="margin-bottom:16px">
-          <h2>AI ฟังสายให้ ระหว่างที่คุณกำลังคุย</h2>
-          <p>มิจฉาชีพเริ่มใช้เสียงที่สร้างด้วย AI ปลอมเป็นตำรวจ เจ้าหน้าที่ธนาคาร หรือลูกหลาน เปิดหน้านี้ไว้ระหว่างสาย AI จะฟังเสียงทุก 2 วินาที และเตือนทันทีถ้าเสียงหรือคำพูดเข้าข่ายหลอกลวง</p>
-        </div>
-        <ul class="hero-points" id="live-points"></ul>
-        <div class="verdict-actions">
-          <a class="btn btn-primary btn-lg" href="pages/live.html?demo=scam" id="live-try"></a>
-          <a class="btn btn-ghost btn-lg" href="pages/live.html?source=mic">ใช้กับสายจริง</a>
-        </div>
-      </div>
-      <figure class="panel" style="margin:0" id="live-proof" hidden>
-        <figcaption><strong>ผลจริงจากโมเดล</strong> <span class="muted small">1 แท่ง = เสียง 2 วินาที</span></figcaption>
-        <p class="small" style="margin-top:12px">สายมิจฉาชีพที่ใช้เสียง AI <span class="muted" data-mean="scam_ai"></span></p>
-        <div class="trace trace-static" data-trace="scam_ai"></div>
-        <p class="small" style="margin-top:14px">เสียงคนไทยจริงที่โมเดลไม่เคยได้ยิน <span class="muted" data-mean="real_human"></span></p>
-        <div class="trace trace-static" data-trace="real_human"></div>
-      </figure>
-    </div>
-  </section>
-
-  <section class="section" id="how">
+  <!-- ================= ตัวตรวจ (ลอยทับ hero) ================= -->
+  <section class="checker-band" id="checker">
     <div class="container">
-      <div class="section-head">
-        <h2>ตรวจได้ 3 แบบ</h2>
-        <p>มิจฉาชีพมาได้หลายทาง เราจึงตรวจได้ทั้งเบอร์ที่โทรมา ข้อความที่ส่งมา และเสียงที่อาจถูกสร้างด้วย AI</p>
+      <div class="checker-band-grid">
+        <div class="checker-band-copy">
+          <span class="eyebrow">ตรวจก่อนเชื่อ</span>
+          <h2>ได้รับสายหรือข้อความแปลก ๆ ตรวจได้เลย</h2>
+          <p>ใส่เบอร์ วางข้อความ หรืออัปโหลดเสียง รู้ผลในไม่กี่วินาทีว่าอันตรายแค่ไหน และควรทำอะไรต่อ</p>
+          <ul class="hero-points" id="hero-points"></ul>
+          <div class="hotline">
+            <a class="hl-num" href="tel:1441">1441</a>
+            <span class="muted small">โดนหลอกโอนเงินไปแล้ว<br>โทรอายัดบัญชีได้ 24 ชั่วโมง</span>
+          </div>
+        </div>
+        <div id="checker-mount"></div>
       </div>
-      <div class="how" id="how-items"></div>
     </div>
   </section>
 
+  <!-- ================= ฟีเจอร์ (แท็บ) ================= -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head center reveal">
+        <span class="eyebrow">AwayCall AI</span>
+        <h2>ตรวจครบทุกทางที่มิจฉาชีพเข้ามา</h2>
+        <p>เบอร์ที่โทรมา ข้อความที่ส่งมา เสียงที่อาจถูกสร้างด้วย AI และระหว่างที่กำลังคุยสาย ทุกผลตรวจบอกเหตุผลและสิ่งที่ควรทำต่อ</p>
+      </div>
+      <div class="feature-tabs reveal">
+        <div class="ft-list" id="ft-list"></div>
+        <div class="ft-stage" id="ft-stage"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ระหว่างสาย ================= -->
+  <section class="section tight" id="live">
+    <div class="container">
+      <div class="live-block reveal">
+        <div>
+          <span class="eyebrow light">จุดเด่น · ตรวจระหว่างสาย</span>
+          <h2>AI ฟังสายให้ ระหว่างที่คุณกำลังคุย</h2>
+          <p class="lede">มิจฉาชีพเริ่มใช้เสียงที่สร้างด้วย AI ปลอมเป็นตำรวจ เจ้าหน้าที่ธนาคาร หรือลูกหลาน AwayCall ฟังเสียงทุก 2 วินาที และเตือนทันทีถ้าเสียงหรือคำพูดเข้าข่ายหลอกลวง</p>
+          <ul class="hero-points" id="live-points"></ul>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href="pages/demo.html" data-icon-before="phone">ลองเดโมโทรศัพท์</a>
+            <a class="btn btn-ghost-light btn-lg" href="pages/live.html?source=mic">ใช้กับสายจริง</a>
+          </div>
+        </div>
+        <figure class="panel" style="margin:0" id="live-proof" hidden>
+          <figcaption><strong>ผลจริงจากโมเดล</strong> <span class="muted small">1 แท่ง = เสียงช่วง 4 วินาที เลื่อนทีละ 2 วินาที</span></figcaption>
+          <p class="small" style="margin-top:14px">สายมิจฉาชีพที่ใช้เสียง AI <span class="muted" data-mean="scam_ai"></span></p>
+          <div class="trace trace-static" data-trace="scam_ai"></div>
+          <p class="small" style="margin-top:16px">เสียงคนไทยจริงที่โมเดลไม่เคยได้ยิน <span class="muted" data-mean="real_human"></span></p>
+          <div class="trace trace-static" data-trace="real_human"></div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ตัวเลข ================= -->
+  <section class="section">
+    <div class="container">
+      <div class="split-head reveal">
+        <div class="section-head">
+          <span class="eyebrow">ทำไมเชื่อผลได้</span>
+          <h2>วัดผลกับข้อมูลที่โมเดลไม่เคยเห็น แล้วเปิดเผยตามจริง</h2>
+        </div>
+        <a class="btn btn-ghost" href="#faq">AI ตรวจอย่างไร</a>
+      </div>
+      <div class="numbers-row reveal" id="numbers">
+        <div class="number"><b data-metric="voice_acc">–</b><span>ความถูกต้องของการตรวจเสียง (ชุดทดสอบ)</span></div>
+        <div class="number"><b data-metric="fake_caught">–</b><span>เสียงปลอมที่จับได้ (recall)</span></div>
+        <div class="number"><b data-metric="text_acc">–</b><span>ความถูกต้องของการตรวจข้อความ</span></div>
+        <div class="number"><b>2 วิ</b><span>อัปเดตผลระหว่างสายทุก 2 วินาที</span></div>
+        <div class="number"><b>4 ทาง</b><span>เบอร์ · ข้อความ · ไฟล์เสียง · ระหว่างสาย</span></div>
+        <div class="number"><b>0</b><span>ไฟล์เสียงหรือข้อความที่เราเก็บไว้</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ใช้อย่างไร ================= -->
+  <section class="section tint">
+    <div class="container">
+      <div class="section-head center reveal">
+        <span class="eyebrow">ใช้ง่ายใน 3 ขั้น</span>
+        <h2>ไม่ต้องติดตั้งอะไร เปิดเว็บก็ใช้ได้</h2>
+      </div>
+      <div class="cards-3 reveal">
+        <div class="card"><span class="step">1</span><h3>ได้รับสายหรือข้อความแปลก ๆ</h3><p>อ้างเป็นตำรวจ ธนาคาร พัสดุตกค้าง หรือคนรู้จักที่ขอยืมเงิน อย่าเพิ่งทำตาม</p></div>
+        <div class="card"><span class="step">2</span><h3>ให้ AwayCall ตรวจ</h3><p>ใส่เบอร์ วางข้อความ อัปโหลดเสียง หรือเปิดหน้า ตรวจระหว่างสาย ไว้ขณะคุย แล้วเปิดลำโพง</p></div>
+        <div class="card"><span class="step">3</span><h3>ทำตามคำแนะนำ</h3><p>รู้ระดับความเสี่ยงพร้อมเหตุผล วางสาย แจ้งเบอร์ หรือโทร 1441 ได้ในแตะเดียว และแจ้งครอบครัวอัตโนมัติ (Premium)</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ราคา ================= -->
   <section class="section" id="pricing">
     <div class="container">
-      <div class="section-head">
-        <h2>ราคา</h2>
-        <p>เริ่มใช้ฟรีได้ทันที อยากให้ AI ช่วยตรวจข้อความและเสียง สมัคร Premium เดือนละ 59 บาท ยกเลิกได้ทุกเมื่อ</p>
+      <div class="section-head center reveal">
+        <span class="eyebrow">ราคา</span>
+        <h2>เริ่มใช้ฟรีได้ทันที</h2>
+        <p>อยากให้ AI ช่วยตรวจข้อความ เสียง และฟังสายได้ไม่จำกัด สมัคร Premium เดือนละ 59 บาท ยกเลิกได้ทุกเมื่อ</p>
       </div>
-      <div class="pricing" id="plans"></div>
+      <div class="pricing reveal" id="plans"></div>
       <p class="metrics-note" id="metrics-note"></p>
     </div>
   </section>
 
-  <section class="section" id="faq">
-    <div class="container">
-      <div class="section-head"><h2>คำถามที่พบบ่อย</h2></div>
-      <div class="faq">
+  <!-- ================= FAQ ================= -->
+  <section class="section tint" id="faq">
+    <div class="container faq-grid">
+      <div class="section-head reveal">
+        <span class="eyebrow">คำถามที่พบบ่อย</span>
+        <h2>สงสัยตรงไหน ถามได้</h2>
+        <p>ไม่เจอคำตอบที่ต้องการ <a href="#contact">ติดต่อทีมงาน</a></p>
+      </div>
+      <div class="faq reveal">
         <details>
           <summary>ผลว่า “ไม่พบประวัติ” แปลว่าเบอร์นี้ปลอดภัยหรือไม่</summary>
           <p>ไม่เสมอไป แปลว่ายังไม่มีผู้ใช้แจ้งเบอร์นี้เข้ามา มิจฉาชีพเปลี่ยนเบอร์บ่อย ถ้าปลายสายขอให้โอนเงิน ขอ OTP หรืออ้างว่าเป็นตำรวจหรือธนาคาร ให้วางสายแล้วโทรกลับเบอร์ทางการเอง</p>
@@ -102,6 +192,10 @@
         <details>
           <summary>AI ตรวจเสียงทำงานอย่างไร</summary>
           <p>โมเดลฟังลักษณะเสียง เช่น ย่านความถี่สูงและจังหวะของเสียง ซึ่งเสียงที่สร้างด้วย AI มักทิ้งร่องรอยไว้ เราเทรนด้วยเสียงจริงเทียบกับเสียงปลอมทั้งภาษาอังกฤษและภาษาไทย และเผยผลทดสอบจริงไว้ด้านบน ผลนี้ช่วยประกอบการตัดสินใจ ไม่ใช่คำตัดสินเด็ดขาด</p>
+        </details>
+        <details>
+          <summary>ใช้กับสายโทรศัพท์มือถือจริงได้อย่างไร</summary>
+          <p>เว็บดักเสียงจากสายมือถือโดยตรงไม่ได้ (iOS / Android ไม่อนุญาต) จึงให้เปิดลำโพงแล้ววางโทรศัพท์ใกล้เครื่องที่เปิดหน้า ตรวจระหว่างสาย หรือดึงเสียงจากแอปโทรบนคอม เช่น LINE / Messenger หน้า เดโมโทรศัพท์ แสดงประสบการณ์ที่เราตั้งใจทำเป็นแอปมือถือในอนาคต</p>
         </details>
         <details>
           <summary>เก็บไฟล์เสียงหรือข้อความของฉันไว้ไหม</summary>
@@ -119,13 +213,20 @@
     </div>
   </section>
 
+  <!-- ================= ติดต่อ ================= -->
   <section class="section" id="contact">
     <div class="container contact-grid">
-      <div class="section-head">
-        <h2>ติดต่อเรา</h2>
-        <p>สอบถามเรื่องสมาชิก แจ้งปัญหาการใช้งาน หรือส่งเบอร์มิจฉาชีพจำนวนมาก ทีมงานตอบกลับทางอีเมลภายใน 1-2 วันทำการ</p>
+      <div class="section-head reveal">
+        <span class="eyebrow">ติดต่อเรา</span>
+        <h2>คุยกับทีม AwayCall</h2>
+        <p>สอบถามเรื่องสมาชิก แจ้งปัญหาการใช้งาน หรือส่งเบอร์มิจฉาชีพจำนวนมาก</p>
+        <ul class="contact-points">
+          <li><span class="kind" data-icon="mail"></span><div><strong>ตอบกลับทางอีเมล</strong><span class="muted small">ภายใน 1-2 วันทำการ</span></div></li>
+          <li><span class="kind" data-icon="flag"></span><div><strong>แจ้งเบอร์หรือเว็บมิจฉาชีพ</strong><span class="muted small">ช่วยให้คนอื่นปลอดภัยขึ้น</span></div></li>
+          <li><span class="kind" data-icon="phone"></span><div><strong>เหตุเร่งด่วน โทร 1441</strong><span class="muted small">อายัดบัญชีได้ 24 ชั่วโมง</span></div></li>
+        </ul>
       </div>
-      <form class="panel" id="contact-form" novalidate>
+      <form class="panel reveal" id="contact-form" novalidate style="padding:32px">
         <div class="row">
           <div class="grow"><label for="c-name">ชื่อ</label><input class="input" id="c-name" maxlength="100" autocomplete="name" required></div>
           <div class="grow"><label for="c-email">อีเมล</label><input class="input" id="c-email" type="email" autocomplete="email" required></div>
@@ -145,43 +246,138 @@
           <textarea class="textarea" id="c-message" maxlength="3000" required></textarea>
         </div>
         <div class="form-error" id="c-error" role="alert" hidden></div>
-        <button class="btn btn-primary" type="submit" style="margin-top:16px">ส่งข้อความ</button>
+        <button class="btn btn-primary btn-lg" type="submit" style="margin-top:18px">ส่งข้อความ</button>
       </form>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="section tight" style="padding-top:0">
+    <div class="container">
+      <div class="cta-band reveal">
+        <div>
+          <h2>อย่าให้สายเดียวพรากเงินเก็บทั้งชีวิต</h2>
+          <p>ลองรับสายมิจฉาชีพจำลองในเดโมโทรศัพท์ แล้วดูว่า AwayCall เตือนคุณได้เร็วแค่ไหน</p>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="pages/demo.html" data-icon-before="phone">เปิดเดโมโทรศัพท์</a>
+          <a class="btn btn-ghost-light btn-lg" href="pages/login.html?mode=register">สมัครฟรี</a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
 
-<footer class="footer">
-  <div class="container">
-    <span>© 2026 VoiceGuard</span>
-    <span>สายด่วนแจ้งเหตุออนไลน์ <a href="tel:1441">1441</a> · ตำรวจไซเบอร์ <a href="https://thaipoliceonline.go.th" rel="noopener">thaipoliceonline.go.th</a></span>
-  </div>
-</footer>
+<footer id="site-footer"></footer>
 
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/checker.js"></script>
 <script>
-document.getElementById("brand").innerHTML = brandMark() + "<span>VoiceGuard</span>";
+mountSiteHeader({ overlay: true });
+mountSiteFooter();
+
+// ไอคอนที่ประกาศไว้ใน HTML
+document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+document.querySelectorAll("[data-icon-before]").forEach((el) => { el.insertAdjacentHTML("afterbegin", icon(el.dataset.iconBefore)); });
+document.querySelectorAll("[data-glyph]").forEach((el) => { el.innerHTML = `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.glyph}</svg>`; });
 
 const user = getCurrentUser();
-if (user && getToken()) {
-  document.getElementById("auth-links").innerHTML =
-    `<a class="btn btn-primary btn-sm" href="pages/check.html">เข้าใช้งาน</a>`;
-}
+const signedIn = !!(user && getToken());
 
 document.getElementById("hero-points").innerHTML = [
-  "AI ฟังระหว่างสาย เตือนทันทีถ้าปลายสายใช้เสียงสังเคราะห์",
   "ตรวจเบอร์กับรายชื่อเบอร์ที่ผู้ใช้แจ้งว่าเป็นมิจฉาชีพ ฟรี ไม่ต้องสมัคร",
   "AI อ่านข้อความ SMS / LINE แล้วชี้จุดที่เข้าข่ายหลอกลวง",
+  "AI ฟังไฟล์เสียง จับเสียงสังเคราะห์ที่ใช้เลียนเสียงคนรู้จัก",
 ].map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
 
 document.getElementById("live-points").innerHTML = [
-  "ใช้ได้ทั้งเปิดลำโพงให้มือถือหรือคอมฟัง และสายจาก LINE / Messenger บนคอม",
+  "เปิดลำโพงให้มือถือหรือคอมฟัง หรือดึงเสียงจาก LINE / Messenger บนคอม",
   "ฟังทั้งลักษณะเสียง และคำพูดอย่าง \"โอนเงินเพื่อตรวจสอบ\" \"ห้ามบอกใคร\"",
   "ไม่เก็บเสียงของคุณ เก็บเฉพาะผลตรวจ",
 ].map((t) => `<li>${icon("check")}<span>${t}</span></li>`).join("");
-document.getElementById("live-try").innerHTML = `${icon("phone")}ลองสายตัวอย่าง`;
+
+/* ---------- แท็บฟีเจอร์ ---------- */
+const bars = (vals) => `<div class="mock-bars">${vals.map((v) => `<i style="height:${v}%;background:${v >= 70 ? "var(--danger-bright)" : v >= 40 ? "var(--warn-bright)" : "var(--safe-bright)"}"></i>`).join("")}</div>`;
+const FEATURES = [
+  {
+    icon: "phone", title: "ตรวจเบอร์โทร",
+    text: "ใส่เบอร์ที่โทรหรือส่งข้อความมา ระบบเทียบกับเบอร์ที่ผู้ใช้แจ้ง บอกจำนวนครั้งที่ถูกแจ้ง ประเภทการหลอกลวง และระดับความเสี่ยง ใช้ฟรีวันละ 5 ครั้ง",
+    cta: ["ตรวจเบอร์ตอนนี้", "#checker"],
+    scene: `<div class="mock"><div class="lbl">เบอร์ที่ตรวจ</div><div class="big num">02-115-3790</div>
+      <div class="mock-row" style="margin-top:12px;justify-content:space-between"><span class="pill pill-danger">อันตราย · ถูกแจ้ง 37 ครั้ง</span><span class="small muted">แอบอ้างเจ้าหน้าที่รัฐ</span></div></div>
+      <div class="mock"><div class="lbl">ควรทำอะไรต่อ</div><p class="small" style="margin-top:4px">วางสาย อย่าโอนเงิน โทรกลับหน่วยงานด้วยเบอร์ที่หาเอง</p></div>`,
+  },
+  {
+    icon: "message", title: "ข้อความ SMS / LINE",
+    text: "วางข้อความที่ได้รับ AI บอกว่าเข้าข่ายหลอกลวงแค่ไหน และไฮไลต์ตรงที่น่าสงสัย เช่น อ้างเป็นเจ้าหน้าที่ เร่งให้โอนเงิน หรือมีลิงก์ปลอม",
+    cta: ["ลองตรวจข้อความ", "#checker"],
+    scene: `<div class="mock"><div class="lbl">ข้อความที่ได้รับ</div><div class="mock-bubble" style="margin-top:6px">พัสดุของท่านตกค้าง <mark>ชำระค่าธรรมเนียม</mark> 25 บาท <mark>ด่วน</mark>ภายในวันนี้ <mark>คลิก</mark> thai-post.vip/pay</div></div>
+      <div class="mock"><div class="mock-row" style="justify-content:space-between"><div><div class="lbl">ความเสี่ยงหลอกลวง</div><div class="big num">96<span class="small muted">/100</span></div></div><span class="pill pill-danger">น่าจะเป็นมิจฉาชีพ</span></div></div>`,
+  },
+  {
+    icon: "mic", title: "ไฟล์เสียง / voice message",
+    text: "อัปโหลดไฟล์เสียงที่ได้รับ AI ตรวจทีละช่วงว่าเป็นเสียงสังเคราะห์ที่ใช้เลียนเสียงคนรู้จักหรือไม่ แม้เสียงปลอมแค่บางช่วงก็จับได้",
+    cta: ["ตรวจไฟล์เสียง", "#checker"],
+    scene: `<div class="mock"><div class="mock-row" style="justify-content:space-between"><div><div class="lbl">voice_message_แม่.m4a · 0:18</div><div class="big">เสียงสังเคราะห์ <span class="num">91</span><span class="small muted">/100</span></div></div></div>${bars([12, 18, 74, 92, 95, 88, 90, 97, 93])}</div>`,
+  },
+  {
+    icon: "wave", title: "ตรวจระหว่างสาย",
+    text: "เปิดหน้าไว้ระหว่างคุย AI ฟังเสียงทุก 2 วินาที ถอดคำพูดภาษาไทย แล้วเตือนเต็มจอทันทีเมื่อพบเสียง AI หรือคำพูดเข้าข่ายหลอกลวง",
+    cta: ["ลองเดโมโทรศัพท์", "pages/demo.html"],
+    scene: `<div class="mock" style="background:var(--danger);color:#fff"><div class="mock-row"><span class="kind" style="background:rgba(255,255,255,.18);color:#fff">${icon("alert")}</span><div><b>ระวัง สายนี้น่าจะเป็นมิจฉาชีพ</b><div class="small" style="opacity:.85">เสียงสังเคราะห์ 98/100 · อ้างเป็นตำรวจ · ขอให้โอนเงิน</div></div></div></div>
+      <div class="mock">${bars([20, 96, 98, 100, 99, 100, 98, 100, 99, 97, 100, 99])}<div class="small muted" style="margin-top:6px">1 แท่ง = 2 วินาที</div></div>`,
+  },
+  {
+    icon: "users", title: "แจ้งเตือนครอบครัว",
+    text: "เพิ่มลูกหลานหรือคนที่ไว้ใจเป็นผู้ติดต่อฉุกเฉิน เมื่อพบสายหรือข้อความที่เสี่ยงสูง AwayCall แจ้งพวกเขาให้ช่วยดูอีกแรง (Premium)",
+    cta: ["ตั้งค่าผู้ติดต่อฉุกเฉิน", signedIn ? "pages/account.html#contacts" : "pages/login.html?mode=register&next=account.html%23contacts"],
+    scene: `<div class="mock"><div class="mock-row"><span class="kind" style="background:var(--brand-wash);color:var(--brand-ink)">${icon("bell")}</span><div><b>AwayCall แจ้งเตือน</b><div class="small muted">แม่ได้รับสายเสี่ยงสูงจาก 02-115-3790 เมื่อสักครู่ ลองโทรหาแม่</div></div></div></div>
+      <div class="mock"><div class="lbl">ผู้ติดต่อฉุกเฉิน</div><div class="mock-row" style="margin-top:8px;justify-content:space-between"><span>ลูกสาว · 08x-xxx-1234</span><span class="pill pill-safe">แจ้งแล้ว</span></div></div>`,
+  },
+];
+function showFeature(i) {
+  document.querySelectorAll(".ft-item").forEach((el, j) => {
+    el.classList.toggle("active", i === j);
+    el.querySelector("button").setAttribute("aria-expanded", String(i === j));
+  });
+  document.querySelectorAll(".ft-scene").forEach((el, j) => el.classList.toggle("active", i === j));
+}
+document.getElementById("ft-list").innerHTML = FEATURES.map((f, i) => `
+  <div class="ft-item">
+    <button type="button" aria-expanded="false" data-ft="${i}">${icon(f.icon)}<span>${f.title}</span></button>
+    <div class="ft-body"><div><div class="ft-card"><p>${f.text}</p><a class="btn btn-ghost btn-sm" href="${f.cta[1]}">${f.cta[0]} ${icon("arrow", "icon arrow")}</a></div></div></div>
+  </div>`).join("");
+document.getElementById("ft-stage").innerHTML = FEATURES.map((f) => `<div class="ft-scene">${f.scene}</div>`).join("");
+document.querySelectorAll("[data-ft]").forEach((b) => b.addEventListener("click", () => showFeature(Number(b.dataset.ft))));
+showFeature(0);
+
+mountReveal();
+
+/* ---------- ตัวตรวจ ---------- */
+mountChecker(document.getElementById("checker-mount"));
+
+/* ---------- คลื่นเสียงใน hero (ภาพประกอบ) ---------- */
+(function heroWave() {
+  const c = document.getElementById("hero-wave");
+  if (!c || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const g = c.getContext("2d");
+  let t = 0;
+  (function draw() {
+    g.clearRect(0, 0, c.width, c.height);
+    const n = 46, w = c.width / n;
+    for (let i = 0; i < n; i++) {
+      const v = (Math.sin(i * .45 + t) * .5 + .5) * (Math.sin(i * .13 - t * .7) * .5 + .5);
+      const h = 6 + v * (c.height - 10);
+      g.fillStyle = `rgba(255,${120 - v * 60},${100 - v * 50},.9)`;
+      g.fillRect(i * w + 1, (c.height - h) / 2, w - 2.5, h);
+    }
+    t += .06;
+    requestAnimationFrame(draw);
+  })();
+})();
+
+/* ---------- ผลจริงจากโมเดล (สายตัวอย่าง) ---------- */
 fetch("audio/demo-calls.json").then((r) => (r.ok ? r.json() : null)).then((d) => {
   if (!d) return;
   const tone = (v) => (v >= 70 ? "danger" : v >= 40 ? "warn" : "safe");
@@ -195,16 +391,8 @@ fetch("audio/demo-calls.json").then((r) => (r.ok ? r.json() : null)).then((d) =>
   document.getElementById("live-proof").hidden = false;
 }).catch(() => {});
 
-document.getElementById("how-items").innerHTML = [
-  ["phone", "เบอร์โทร", "ใส่เบอร์ที่โทรหรือส่งข้อความมา ระบบเทียบกับเบอร์ที่ถูกแจ้ง บอกจำนวนครั้งที่ถูกแจ้งและระดับความเสี่ยง ใช้ฟรีวันละ 5 ครั้ง"],
-  ["message", "ข้อความ SMS / LINE", "วางข้อความที่ได้รับ AI บอกว่าเข้าข่ายหลอกลวงแค่ไหน และชี้ว่าตรงไหนน่าสงสัย เช่น อ้างเป็นเจ้าหน้าที่ เร่งให้โอนเงิน หรือมีลิงก์ปลอม"],
-  ["mic", "ไฟล์เสียง", "อัปโหลดไฟล์เสียงหรือ voice message ที่ได้รับ AI ตรวจว่าเป็นเสียงสังเคราะห์ที่มิจฉาชีพใช้เลียนเสียงคนรู้จักหรือไม่ หรือให้ AI ฟังสดระหว่างสายในหน้า ตรวจระหว่างสาย"],
-].map(([ic, h, p]) => `<div>${icon(ic, "icon icon-lg")}<h3>${h}</h3><p class="muted">${p}</p></div>`).join("");
-
-mountChecker(document.getElementById("checker"));
-
+/* ---------- ราคา ---------- */
 apiGet("/billing/plans", { auth: false }).then((plans) => {
-  const signedIn = user && getToken();
   document.getElementById("plans").innerHTML = plans.map((p) => {
     const featured = p.code === "premium";
     const href = featured
@@ -214,21 +402,36 @@ apiGet("/billing/plans", { auth: false }).then((plans) => {
       <h3>${escapeHtml(p.name)}</h3>
       <div class="price num">${p.price_baht ? p.price_baht : "0"} <span class="per">บาท ${escapeHtml(p.period)}</span></div>
       <ul>${p.features.map((f) => `<li>${icon("check")}<span>${escapeHtml(f)}</span></li>`).join("")}</ul>
-      <a class="btn ${featured ? "btn-primary" : "btn-ghost"} btn-block" href="${href}">${featured ? "สมัคร Premium" : "เริ่มใช้ฟรี"}</a>
+      <a class="btn ${featured ? "btn-primary" : "btn-ghost"} btn-lg btn-block" href="${href}">${featured ? "สมัคร Premium" : "เริ่มใช้ฟรี"}</a>
     </div>`;
   }).join("");
 }).catch(() => {
-  document.getElementById("plans").innerHTML = `<div class="plan">ฟรี: ตรวจเบอร์วันละ 5 ครั้ง</div><div class="plan featured">Premium 59 บาท/เดือน: AI ตรวจข้อความและเสียง</div>`;
+  document.getElementById("plans").innerHTML = `
+    <div class="plan"><h3>ฟรี</h3><div class="price num">0 <span class="per">บาท</span></div>
+      <ul><li>${icon("check")}<span>ตรวจเบอร์วันละ 5 ครั้ง</span></li><li>${icon("check")}<span>ทดลองตรวจระหว่างสาย</span></li><li>${icon("check")}<span>เก็บประวัติการตรวจ</span></li></ul>
+      <a class="btn btn-ghost btn-lg btn-block" href="pages/login.html?mode=register">เริ่มใช้ฟรี</a></div>
+    <div class="plan featured"><h3>Premium</h3><div class="price num">59 <span class="per">บาท / เดือน</span></div>
+      <ul><li>${icon("check")}<span>ตรวจเบอร์ไม่จำกัด</span></li><li>${icon("check")}<span>AI ตรวจข้อความและไฟล์เสียง</span></li><li>${icon("check")}<span>ตรวจระหว่างสายไม่จำกัด พร้อมอ่านคำพูด</span></li><li>${icon("check")}<span>แจ้งเตือนผู้ติดต่อฉุกเฉิน</span></li></ul>
+      <a class="btn btn-primary btn-lg btn-block" href="pages/login.html?mode=register&next=account.html%23upgrade">สมัคร Premium</a></div>`;
 });
 
+/* ---------- ตัวเลขจากผลทดสอบโมเดลล่าสุด ---------- */
 aiStatus().then((s) => {
-  if (!s.available || !s.voice_test) return;
+  if (!s.available || !s.voice_test) {
+    document.querySelectorAll("[data-metric]").forEach((el) => el.closest(".number").remove());
+    return;
+  }
   const v = s.voice_test, t = s.text_test;
+  const set = (k, val) => { const el = document.querySelector(`[data-metric="${k}"]`); if (el) el.textContent = val; };
+  set("voice_acc", pct(v.accuracy));
+  set("fake_caught", pct(v.fake_caught_rate));
+  if (t) set("text_acc", pct(t.accuracy)); else document.querySelector('[data-metric="text_acc"]').closest(".number").remove();
   document.getElementById("metrics-note").textContent =
     `ผลทดสอบล่าสุดกับข้อมูลที่โมเดลไม่เคยเห็น: ตรวจเสียงถูกต้อง ${pct(v.accuracy)} (จับเสียงปลอมได้ ${pct(v.fake_caught_rate)})` +
     (t ? ` · ตรวจข้อความถูกต้อง ${pct(t.accuracy)}` : "");
 });
 
+/* ---------- ฟอร์มติดต่อ ---------- */
 document.getElementById("contact-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errBox = document.getElementById("c-error");

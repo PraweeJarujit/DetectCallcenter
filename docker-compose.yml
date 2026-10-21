@@ -1,4 +1,4 @@
-# DetectCallcenter / VoiceGuard AI — รันทั้งระบบด้วย: docker compose up -d --build
+# DetectCallcenter / AwayCall — รันทั้งระบบด้วย: docker compose up -d --build
 #   frontend : http://localhost:3000      (Nginx เสิร์ฟหน้าเว็บ + proxy /api -> backend)
 #   backend  : http://localhost:8000/docs (Swagger UI)
 #   ai       : http://localhost:9000/health (โมเดลตรวจเสียง AI + ข้อความหลอกลวง)

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เดโมโทรศัพท์ | AwayCall</title>
+<meta name="description" content="จำลองการรับสายมิจฉาชีพที่ใช้เสียง AI ฟังเสียงจริง แล้วดู AwayCall ประเมินความเสี่ยงทีละ 2 วินาที">
+<meta name="theme-color" content="#0b1228">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="demo-page">
+<header id="shell"></header>
+
+<main class="demo-stage">
+  <div class="container" style="max-width:1320px">
+    <div class="demo-head">
+      <div>
+        <span class="eyebrow light">เดโมโทรศัพท์ · AwayCall</span>
+        <h1>รับสายจริง ฟังเสียงจริง แล้วดู AI ประเมินสด</h1>
+        <p>เลือกสายตัวอย่าง กดโทรเข้า แล้วรับสายบนโทรศัพท์ (เปิดเสียงลำโพง) AwayCall จะฟังเสียงทีละช่วง 4 วินาที ทุก 2 วินาที อ่านคำพูด และเตือนเต็มจอทันทีเมื่อเข้าข่ายมิจฉาชีพ</p>
+      </div>
+      <button class="btn btn-ghost-light" type="button" id="present-btn" data-icon-before="presentation">โหมดนำเสนอ (เต็มจอ)</button>
+    </div>
+
+    <div class="demo-grid">
+      <!-- ซ้าย: ควบคุมเดโม -->
+      <aside class="demo-left">
+        <section class="dpanel">
+          <h3 data-icon-before="phone">1. เลือกสายที่จะโทรเข้า</h3>
+          <div class="scen" id="scenarios"></div>
+        </section>
+        <section class="dpanel">
+          <h3 data-icon-before="sparkle">2. ที่มาของผลวิเคราะห์</h3>
+          <div class="seg-dark" role="group" aria-label="ที่มาของผลวิเคราะห์">
+            <button type="button" data-mode="auto" aria-pressed="true">AI สดจากเซิร์ฟเวอร์</button>
+            <button type="button" data-mode="recorded" aria-pressed="false">ผลที่บันทึกไว้</button>
+          </div>
+          <div class="srv wait" id="srv"><i></i><span>กำลังเช็กเซิร์ฟเวอร์ AI…</span></div>
+          <p class="small muted" style="margin-top:8px" id="mode-note">ส่งเสียงไปให้โมเดลจริงตรวจทีละช่วง ถ้าเซิร์ฟเวอร์ไม่ตอบ จะสลับไปใช้ผลที่โมเดลเดียวกันคำนวณไว้ล่วงหน้าให้อัตโนมัติ</p>
+        </section>
+        <section class="dpanel">
+          <div style="display:grid;gap:10px">
+            <button class="btn btn-primary btn-lg btn-block" type="button" id="call-btn" data-icon-before="phone">3. โทรเข้า</button>
+            <button class="btn btn-ghost-light btn-block" type="button" id="reset-btn">เริ่มใหม่</button>
+          </div>
+          <p class="small muted kbd-hint" style="margin-top:12px">คีย์ลัด: <span class="kbd">Space</span> รับ / วางสาย · <span class="kbd">R</span> เริ่มใหม่ · <span class="kbd">1</span> <span class="kbd">2</span> เลือกสาย</p>
+        </section>
+      </aside>
+
+      <!-- กลาง: โทรศัพท์ -->
+      <div class="demo-phone-col">
+        <div class="phone" id="phone">
+          <div class="phone-screen" id="screen">
+            <div class="phone-island"></div>
+            <div class="phone-status"><span id="ph-clock">09:41</span><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i><span class="batt"></span></span></div>
+
+            <!-- ล็อกสกรีน -->
+            <div class="pscreen wall active" data-screen="lock">
+              <div class="lock-time" id="lock-time">09:41</div>
+              <div class="lock-date" id="lock-date"></div>
+              <div class="notif" style="margin-top:auto"><span class="app" data-glyph></span><div><b>AwayCall</b>ปกป้องสายเรียกเข้าอยู่ · ฟังและเตือนเมื่อพบความเสี่ยง</div></div>
+              <button class="notif" type="button" id="lock-call" style="border:none;color:#fff;font:inherit;cursor:pointer"><span class="app" style="background:#22c55e" data-icon="phone"></span><div><b>เดโม</b>แตะเพื่อจำลองสายเรียกเข้า</div></button>
+            </div>
+
+            <!-- สายเรียกเข้า -->
+            <div class="pscreen wall-call ringing" data-screen="incoming">
+              <div class="caller-sub" style="margin-top:6%">สายเรียกเข้า…</div>
+              <div class="caller-name" id="in-number">02-115-3790</div>
+              <div class="caller-sub" id="in-sub">ไม่ทราบชื่อ</div>
+              <div class="aw-chip" id="in-chip"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true" data-glyph-svg></svg><span>AwayCall กำลังตรวจเบอร์…</span></div>
+              <div class="avatar" id="in-avatar" style="margin-top:14%">?</div>
+              <div class="call-actions">
+                <button class="call-btn" type="button" id="decline-btn"><span class="cb decline" data-icon="phone"></span>ปฏิเสธ</button>
+                <button class="call-btn" type="button" id="accept-btn"><span class="cb accept" data-icon="phone"></span>รับสาย</button>
+              </div>
+            </div>
+
+            <!-- ระหว่างสาย -->
+            <div class="pscreen wall-call" data-screen="call">
+              <div class="aw-live" id="aw-live"><span class="logo" data-glyph></span><span class="txt"><b id="aw-word">AwayCall กำลังฟัง</b><span id="aw-sub">รอเสียงพูด 4 วินาทีแรก</span></span><span class="score" id="aw-score">–</span></div>
+              <div class="caller-name" style="margin-top:30%" id="call-number">02-115-3790</div>
+              <div class="in-call-timer" id="call-timer">00:00</div>
+              <canvas class="wave-canvas" id="wave" width="300" height="64"></canvas>
+              <div class="caption" id="caption">…</div>
+              <div class="keypad">
+                <button class="key" type="button" id="mute-btn"><span class="kc" data-icon="micoff"></span>ปิดเสียง</button>
+                <span class="key"><span class="kc" data-icon="keypad"></span>ปุ่มกด</span>
+                <button class="key on" type="button" id="spk-btn"><span class="kc" data-icon="speaker"></span>ลำโพง</button>
+                <span class="key"><span class="kc" data-icon="plus"></span>เพิ่มสาย</span>
+                <span class="key"><span class="kc" data-icon="video"></span>วิดีโอ</span>
+                <span class="key"><span class="kc" data-icon="users"></span>รายชื่อ</span>
+              </div>
+              <div class="call-actions" style="justify-content:center"><button class="call-btn" type="button" id="hangup-btn"><span class="cb decline" data-icon="phone"></span></button></div>
+            </div>
+
+            <!-- หน้าต่างเตือนของ AwayCall -->
+            <div class="aw-alert" id="aw-alert" role="alertdialog" aria-label="AwayCall เตือน">
+              <div class="ah"><span class="logo" data-glyph></span>AwayCall · แจ้งเตือนความเสี่ยงสูง</div>
+              <div class="big-ic" data-icon="alert"></div>
+              <h4>ระวัง สายนี้น่าจะเป็นมิจฉาชีพ</h4>
+              <ul id="alert-reasons"></ul>
+              <p style="font-size:.78em;margin-top:8px;opacity:.9">อย่าโอนเงิน อย่าบอก OTP และอย่าติดตั้งแอปตามที่ปลายสายบอก</p>
+              <div class="acts">
+                <button class="a1" type="button" id="alert-hangup">วางสายทันที</button>
+                <a class="a2" href="tel:1441">โทร 1441 อายัดบัญชี</a>
+                <button class="a3" type="button" id="alert-dismiss">ฟังต่อ (ไม่แนะนำ)</button>
+              </div>
+            </div>
+
+            <!-- จบสาย -->
+            <div class="pscreen wall" data-screen="ended">
+              <div class="caller-sub" style="margin-top:6%">สายสิ้นสุด</div>
+              <div class="caller-name" id="end-number">02-115-3790</div>
+              <div class="caller-sub" id="end-time">00:00</div>
+              <div class="sum-card" id="sum-card"></div>
+              <div class="sum-actions" id="sum-actions"></div>
+            </div>
+
+            <div class="home-bar"></div>
+          </div>
+        </div>
+        <p class="phone-hint" id="phone-hint">เปิดเสียงลำโพงของคอมไว้ เสียงในสายเป็นไฟล์เสียงจริง</p>
+      </div>
+
+      <!-- ขวา: แผงวิเคราะห์สำหรับผู้นำเสนอ -->
+      <section class="console" aria-live="polite">
+        <div class="console-top">
+          <h2><span class="logo" data-glyph></span>AwayCall วิเคราะห์สด</h2>
+          <span class="src-tag" id="src-tag">พร้อม</span>
+        </div>
+        <div class="gauges">
+          <div class="gauge g-main" id="g-main"><small>ความเสี่ยงรวม</small><b id="g-main-v">–</b><span id="g-main-w">ยังไม่เริ่มสาย</span></div>
+          <div class="gauge" id="g-voice"><small>เสียงสังเคราะห์ (AI)</small><b id="g-voice-v">–</b><span class="small muted" id="g-voice-src" style="font-weight:500">โมเดลเสียง</span></div>
+          <div class="gauge" id="g-text"><small>คำพูดเข้าข่ายหลอกลวง</small><b id="g-text-v">–</b><span class="small muted" id="g-text-src" style="font-weight:500">โมเดลข้อความ</span></div>
+        </div>
+        <div class="pipeline" id="pipeline">
+          <span data-p="audio">เสียงในสาย</span><i>→</i><span data-p="chunk">ตัดช่วง 4 วิ</span><i>→</i><span data-p="voice">โมเดลเสียง</span><i>→</i><span data-p="words">คำพูด</span><i>→</i><span data-p="text">โมเดลข้อความ</span><i>→</i><span data-p="alert">เตือน</span>
+        </div>
+        <h3>คะแนนเสียงทีละช่วง <small>1 แท่ง = 2 วินาที · เส้นเหลือง 40 · เส้นแดง 70</small></h3>
+        <div class="trace" id="trace"></div>
+        <h3>คำพูดในสาย <small id="tr-note">ไฮไลต์ = คำที่เข้าข่ายหลอกลวง</small></h3>
+        <div class="transcript" id="transcript"><div class="empty-ln">คำพูดจะขึ้นที่นี่เมื่อรับสาย</div></div>
+        <h3>เหตุการณ์</h3>
+        <ul class="events" id="events"><li><time>--:--</time><span class="dot"></span><span>รอสายเรียกเข้า</span></li></ul>
+        <div class="console-foot" id="console-foot">ผลเสียงคำนวณโดยโมเดลจริงของ AwayCall · ไม่ใช่ตัวเลขที่ตั้งไว้ล่วงหน้า</div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/demo.js"></script>
+<script>
+if (getToken() && getCurrentUser()) {
+  mountShell("demo");
+  document.body.classList.remove("tint");
+} else {
+  mountSiteHeader({ next: "demo.html" });
+}
+document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+document.querySelectorAll("[data-icon-before]").forEach((el) => { el.insertAdjacentHTML("afterbegin", icon(el.dataset.iconBefore)); });
+document.querySelectorAll("[data-glyph]").forEach((el) => { el.innerHTML = `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${ICONS.glyph}</svg>`; });
+document.querySelectorAll("[data-glyph-svg]").forEach((el) => { el.innerHTML = ICONS.glyph; });
+mountDemo();
+</script>
+</body>
+</html>
